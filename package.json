@@ -1,0 +1,24 @@
+{
+  "name": "clouds-client",
+  "version": "0.2.0-beta-1",
+  "description": "lightweight micro-services frameworks",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@git.isncer.com:2345/leizongmin/clouds-client.git"
+  },
+  "author": "Zongmin Lei <leizongmin@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "async": "^1.4.0",
+    "debug": "^2.2.0",
+    "lei-utils": "^1.0.8"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.5",
+    "should": "^7.0.2"
+  }
+}
