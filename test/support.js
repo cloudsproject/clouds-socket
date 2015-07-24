@@ -29,3 +29,11 @@ exports.getPort = function () {
 exports.getHost = function () {
   return '127.0.0.1';
 };
+
+exports.exit = function () {
+  var args = Array.prototype.slice.call(arguments);
+  var callback = args.pop();
+  async.eachSeries(args, function (client, next) {
+    client.exit(next);
+  }, callback);
+};
