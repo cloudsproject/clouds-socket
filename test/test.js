@@ -9,7 +9,7 @@ var support = require('./support');
 
 describe('clouds-socket', function () {
 
-  it('should server.listen() & client.connect()', function (done) {
+  it('server.listen() & client.connect()', function (done) {
     var host = support.getHost();
     var port = support.getPort();
     var s, c1, c2;
@@ -47,7 +47,7 @@ describe('clouds-socket', function () {
     ], done);
   });
 
-  it('should server.listen() & client.connect() - event `exit`', function (done) {
+  it('server.listen() & client.connect() - event `exit`', function (done) {
     var host = support.getHost();
     var port = support.getPort();
     var s, c1, c2;
