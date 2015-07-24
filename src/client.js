@@ -8,8 +8,9 @@ var assert = require('assert');
 var net = require('net');
 var common = require('./common');
 var Transfer = require('./transfer');
-var debug = common.debug('server');
+var debug = common.debug('client');
 
+//------------------------------------------------------------------------------
 
 /**
  * create client
@@ -43,7 +44,7 @@ Client.prototype._connect = function () {
   self._exited = false;
 
   self._socket = new net.Socket();
-  self._transfer = new Transfer();
+  self._transfer = new Transfer(self._socket);
   self._socket.connect(self._options.port, self._options.host);
 
   self._socket.once('connect', function () {
@@ -61,24 +62,23 @@ Client.prototype._connect = function () {
 
   self._socket.on('error', function (err) {
     self._debug('connection error: host=%s, port=%s, error=%s', self._options.host, self._options.port, err);
-    self.emit('error');
+    self.emit('error', err);
   });
 
   self._socket.once('close', function () {
     self._debug('connection closed');
-    if (self._exited) return;
-    setTimeout(function () {
-      self._connect();
-    }, common.default.reconnectWaiting);
+    if (self._exited) {
+      self.emit('exit');
+    } else {
+      setTimeout(function () {
+        self._connect();
+      }, common.default.reconnectWaiting);
+    }
   });
 
   self._transfer.process = function (buf) {
-    self._process(buf);
+    self.emit('data', buf);
   };
-};
-
-Client.prototype._process = function (buf) {
-
 };
 
 Client.prototype.send = function (buf) {
@@ -88,7 +88,7 @@ Client.prototype.send = function (buf) {
     this._pendingList.push(buf);
     return;
   }
-  this._sendData(buf);
+  this._transfer.sendData(buf);
 };
 
 Client.prototype.exit = function (callback) {
@@ -99,6 +99,8 @@ Client.prototype.exit = function (callback) {
 };
 
 
-module.exports = function (options) {
+Client.create = function (options) {
   return new Client(options);
 };
+
+module.exports = Client;

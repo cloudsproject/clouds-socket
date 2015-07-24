@@ -8,6 +8,7 @@ var net = require('net');
 var common = require('./common');
 var debug = common.debug('transfer');
 
+//------------------------------------------------------------------------------
 
 function Transfer (socket) {
   var self = this;
@@ -67,5 +68,9 @@ Transfer.prototype.startReceiving = function () {
   this._socket.resume();
 };
 
+
+Transfer.create = function (socket) {
+  return new Transfer(socket);
+};
 
 module.exports = Transfer;
