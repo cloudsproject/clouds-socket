@@ -31,7 +31,6 @@ exports.packBuffer = function (buf) {
   var newBuf = new Buffer(len + 4);
   newBuf.writeUInt32BE(len, 0);
   buf.copy(newBuf, 4);
-  console.log('packBuffer, len=%s', len);
   return newBuf;
 };
 
