@@ -6,11 +6,14 @@
 
 var should = require('should');
 var async = require('async');
+var utils = require('lei-utils');
 var socket = require('../');
 
 
 global.should = should;
 global.async = async;
+
+exports.utils = utils;
 
 exports.createClient = function (options) {
   return socket.createClient(options);
@@ -36,4 +39,10 @@ exports.exit = function () {
   async.eachSeries(args, function (client, next) {
     client.exit(next);
   }, callback);
+};
+
+exports.wait = function (ms) {
+  return function (next) {
+    setTimeout(next, ms);
+  };
 };

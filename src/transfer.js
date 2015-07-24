@@ -16,41 +16,52 @@ function Transfer (socket) {
   socket.on('data', function (buf) {
     self.receiveData(buf);
   });
+  self.startReceiving();
 }
 
 Transfer.prototype.receiveData = function (buf) {
-  if (this._bufferNestLength > 0) {
-    var allBuf = Buffer.concat(this._buffer, buf);
-    var nestLength = this._bufferNestLength - buf.length;
-    if (nestLength === 0) {
-      this.process(allBuf);
-      this.startReceiving();
-    } else if (nestLength > 0) {
-      this._buffer = allBuf;
-      this._bufferNestLength = nestLength;
+  var self = this;
+  if (self._bufferNeedLength > 0) {
+    var allBuf = Buffer.concat(self._buffer, buf);
+    var needLength = self._bufferNeedLength - buf.length;
+    if (needLength === 0) {
+      self.process(allBuf);
+      self.startReceiving();
+    } else if (needLength > 0) {
+      self._buffer = allBuf;
+      self._bufferNeedLength = needLength;
     } else {
-      var newBuf = allBuf.slice(0, nestLength);
-      this.pause();
-      this.process(newBuf);
-      var self = this;
+      var newBuf = allBuf.slice(0, needLength);
+      self.pause();
+      self.process(newBuf);
       process.nextTick(function () {
         self.receiveData(allBuf.slice(newBuf.length));
       });
     }
   } else {
     var info = common.unpackBuffer(buf);
-    if (info.nestLength > 0) {
-      this._buffer = buf;
-      this._bufferNestLength = info.nestLength;
+    if (info.needLength > 0) {
+      self._buffer = buf;
+      self._bufferNeedLength = info.needLength;
+    } else if (info.needLength < 0) {
+      self.pause();
+      self.process(info.buffer);
+      process.nextTick(function () {
+        self.receiveData(info.restBuffer);
+      });
     } else {
-      this.process(info.buffer);
-      this.startReceiving();
+      self.process(info.buffer);
+      self.startReceiving();
     }
   }
 };
 
-Transfer.prototype.sendData = function (buf) {
-  this._socket.write(common.packBuffer(buf));
+Transfer.prototype.sendData = function (buf, callback) {
+  if (callback) {
+    this._socket.write(common.packBuffer(buf), common.callback(callback));
+  } else {
+    this._socket.write(common.packBuffer(buf));
+  }
 };
 
 Transfer.prototype.process = function () {
@@ -64,7 +75,7 @@ Transfer.prototype.pause = function () {
 
 Transfer.prototype.startReceiving = function () {
   this._buffer = new Buffer(0);
-  this._bufferNestLength = 0;
+  this._bufferNeedLength = 0;
   this._socket.resume();
 };
 

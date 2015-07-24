@@ -110,9 +110,9 @@ function ServerConnection (socket) {
 
 common.inheritsEventEmitter(ServerConnection);
 
-ServerConnection.prototype.send = function (buf) {
+ServerConnection.prototype.send = function (buf, callback) {
   this._debug('send: buffer=%s', buf.length);
-  this._transfer.sendData(buf);
+  this._transfer.sendData(buf, callback);
 };
 
 ServerConnection.prototype.exit = function (callback) {

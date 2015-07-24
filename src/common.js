@@ -38,8 +38,9 @@ exports.unpackBuffer = function (buf) {
   var len = buf.readUInt32BE(0);
   return {
     length: len,
-    nestLength: len - (buf.length - 4),
-    buffer: buf.slice(4)
+    needLength: len - (buf.length - 4),
+    buffer: buf.slice(4, len + 4),
+    restBuffer: buf.slice(len + 4)
   };
 };
 

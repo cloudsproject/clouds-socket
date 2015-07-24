@@ -81,14 +81,14 @@ Client.prototype._connect = function () {
   };
 };
 
-Client.prototype.send = function (buf) {
+Client.prototype.send = function (buf, callback) {
   this._debug('send: buffer=%s', buf.length);
   if (!this._connected) {
     this._debug('write pending: buffer=%s', buf.length);
     this._pendingList.push(buf);
     return;
   }
-  this._transfer.sendData(buf);
+  this._transfer.sendData(buf, callback);
 };
 
 Client.prototype.exit = function (callback) {
