@@ -57,18 +57,18 @@ describe('clouds-socket', function () {
           clientData.push(d);
         });
       },
-      support.wait(100),
+      support.wait(200),
       function (next) {
         // 检查数据
-        serverData.length.should.equal(3);
-        clientData.length.should.equal(2);
+        assert.equal(serverData.length, 3);
+        assert.equal(clientData.length, 2);
         serverData.forEach(function (d) {
-          d.length.should.equal(msgBuf2.length);
-          d.toString().should.equal(msg2);
+          assert.equal(d.length, msgBuf2.length);
+          assert.equal(d.toString(), msg2);
         });
         clientData.forEach(function (d) {
-          d.length.should.equal(msgBuf1.length);
-          d.toString().should.equal(msg1);
+          assert.equal(d.length, msgBuf1.length);
+          assert.equal(d.toString(), msg1);
         });
         next();
       },
@@ -125,18 +125,18 @@ describe('clouds-socket', function () {
           clientData.push(d);
         });
       },
-      support.wait(100),
+      support.wait(200),
       function (next) {
         // 检查数据
-        serverData.length.should.equal(6);
-        clientData.length.should.equal(4);
+        assert.equal(serverData.length, 6);
+        assert.equal(clientData.length, 4);
         serverData.forEach(function (d) {
-          d.length.should.equal(msgBuf2.length);
-          d.toString().should.equal(msg2);
+          assert.equal(d.length, msgBuf2.length);
+          assert.equal(d.toString(), msg2);
         });
         clientData.forEach(function (d) {
-          d.length.should.equal(msgBuf1.length);
-          d.toString().should.equal(msg1);
+          assert.equal(d.length, msgBuf1.length);
+          assert.equal(d.toString(), msg1);
         });
         next();
       },
@@ -193,18 +193,18 @@ describe('clouds-socket', function () {
         c1.send(msgBuf2);
         c1.send(msgBuf2);
       },
-      support.wait(100),
+      support.wait(200),
       function (next) {
         // 检查数据
-        serverData.length.should.equal(6);
-        clientData.length.should.equal(4);
+        assert.equal(serverData.length, 6);
+        assert.equal(clientData.length, 4);
         serverData.forEach(function (d) {
-          d.length.should.equal(msgBuf2.length);
-          d.toString().should.equal(msg2);
+          assert.equal(d.length, msgBuf2.length);
+          assert.equal(d.toString(), msg2);
         });
         clientData.forEach(function (d) {
-          d.length.should.equal(msgBuf1.length);
-          d.toString().should.equal(msg1);
+          assert.equal(d.length, msgBuf1.length);
+          assert.equal(d.toString(), msg1);
         });
         next();
       },
@@ -277,18 +277,18 @@ describe('clouds-socket', function () {
           }
         }
       },
-      support.wait(100),
+      support.wait(200),
       function (next) {
         // 检查数据
-        serverData.length.should.equal(times);
-        clientData.length.should.equal(times);
+        assert.equal(serverData.length, times);
+        assert.equal(clientData.length, times);
         serverData.forEach(function (d) {
-          d.length.should.equal(msgBuf2.length);
-          d.toString().should.equal(msg2);
+          assert.equal(d.length, msgBuf2.length);
+          assert.equal(d.toString(), msg2);
         });
         clientData.forEach(function (d) {
-          d.length.should.equal(msgBuf1.length);
-          d.toString().should.equal(msg1);
+          assert.equal(d.length, msgBuf1.length);
+          assert.equal(d.toString(), msg1);
         });
         next();
       },

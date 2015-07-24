@@ -115,9 +115,10 @@ describe('clouds-socket', function () {
         c2 = support.createClient({port: port, host: host});
         c2.on('connect', next);
       },
+      support.wait(200),
       function (next) {
         // 检查计数器
-        counter.should.equal(2);
+        assert.equal(counter, 2);
         next();
       },
       function (next) {

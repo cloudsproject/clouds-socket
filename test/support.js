@@ -5,13 +5,11 @@
  */
 
 var assert = require('assert');
-var should = require('should');
 var async = require('async');
 var utils = require('lei-utils');
 var socket = require('../');
 
 
-global.should = should;
 global.async = async;
 global.assert = assert;
 

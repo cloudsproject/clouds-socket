@@ -20,8 +20,7 @@
   "devDependencies": {
     "async": "^1.4.0",
     "blanket": "^1.1.7",
-    "mocha": "^2.2.5",
-    "should": "^7.0.2"
+    "mocha": "^2.2.5"
   },
   "config": {
     "blanket": {
