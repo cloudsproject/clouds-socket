@@ -62,7 +62,7 @@ Transfer.prototype.receiveData = function (buf, isNewReceiving) {
 };
 
 Transfer.prototype.sendData = function (buf, callback) {
-  this._debug('transfer: sendData: buffer=%s', buf.length);
+  this._debug('transfer: sendData: buffer=%s, callback=%s', buf.length, !!callback);
   if (callback) {
     this._socket.write(common.packBuffer(buf), common.callback(callback));
   } else {
