@@ -44,20 +44,20 @@ Client.prototype._connect = function () {
   self._exited = false;
 
   self._socket = new net.Socket();
-  self._transfer = new Transfer(self._socket);
+  self._transfer = new Transfer(self._socket, self._debug);
   self._socket.connect(self._options.port, self._options.host);
 
   self._socket.once('connect', function () {
     self._connected = true;
     self._debug('connected: host=%s, port=%s', self._options.host, self._options.port);
-    self.emit('connect');
-    process.nextTick(function () {
+    if (self._pendingList.length > 0) {
       self._debug('processing pending list: length=%s', self._pendingList.length);
       self._pendingList.forEach(function (buf) {
         self._send(buf);
       });
       self._pendingList = [];
-    });
+    }
+    self.emit('connect');
   });
 
   self._socket.on('error', function (err) {

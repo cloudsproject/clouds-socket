@@ -46,3 +46,12 @@ exports.wait = function (ms) {
     setTimeout(next, ms);
   };
 };
+
+exports.randomString = function (len) {
+  var buf = new Buffer(len);
+  for (var i = 0; i < len; i++) {
+    var c = 96 + parseInt(Math.random() * 26, 10);
+    buf[i] = c;
+  }
+  return buf.toString();
+};

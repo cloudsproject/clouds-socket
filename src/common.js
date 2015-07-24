@@ -31,6 +31,7 @@ exports.packBuffer = function (buf) {
   var newBuf = new Buffer(len + 4);
   newBuf.writeUInt32BE(len, 0);
   buf.copy(newBuf, 4);
+  console.log('packBuffer, len=%s', len);
   return newBuf;
 };
 
@@ -43,7 +44,6 @@ exports.unpackBuffer = function (buf) {
     restBuffer: buf.slice(len + 4)
   };
 };
-
 
 common.extendBase = function (obj, socket) {
   self._socket.on('data', function (buf) {
