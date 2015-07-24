@@ -94,7 +94,7 @@ Client.prototype.send = function (buf) {
 Client.prototype.exit = function (callback) {
   this._debug('exit');
   this._exited = true;
-  this.once('close', common.callback(callback));
+  this._socket.once('close', common.callback(callback));
   this._socket.destroy();
 };
 

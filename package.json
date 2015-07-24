@@ -4,7 +4,7 @@
   "description": "lightweight micro-services frameworks",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./run_test"
   },
   "repository": {
     "type": "git",
@@ -18,7 +18,20 @@
     "lei-utils": "^1.0.8"
   },
   "devDependencies": {
+    "async": "^1.4.0",
+    "blanket": "^1.1.7",
     "mocha": "^2.2.5",
     "should": "^7.0.2"
+  },
+  "config": {
+    "blanket": {
+      "pattern": [
+        "src"
+      ],
+      "data-cover-never": [
+        "node_modules",
+        "tests"
+      ]
+    }
   }
 }

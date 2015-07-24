@@ -20,7 +20,7 @@ var debug = common.debug('server');
  * @return {Socket}
  */
 
-function Server () {
+function Server (options) {
   assert(options.host, 'missing parameter `host`');
   assert(options.port, 'missing parameter `port`');
 
@@ -50,17 +50,18 @@ Server.prototype._listen = function () {
 
   self._socket.once('close', function () {
     self._debug('server closed');
+    self.emit('exit');
   });
 
   self._socket.on('listening', function () {
     self._listening = true;
-    self._debug('listening: host=%s, port=%s, error=%s', self._options.host, self._options.port);
+    self._debug('listening: host=%s, port=%s', self._options.host, self._options.port);
     self.emit('listening');
   });
 
   self._socket.on('connection', function (socket) {
     self._debug('new connection: host=%s, port=%s', socket.remoteAddress, socket.remotePort);
-    self.emit('connection', self.wrapClient(socket));
+    self.emit('connection', self._wrapClient(socket));
   });
 
   self._socket.listen(self._options.port, self._options.host);
@@ -73,7 +74,7 @@ Server.prototype._wrapClient = function (socket) {
 Server.prototype.exit = function (callback) {
   this._debug('exit');
   this._exited = true;
-  this.once('close', common.callback(callback));
+  this._socket.once('close', common.callback(callback));
   this._socket.close();
 };
 
@@ -107,6 +108,8 @@ function ServerConnection (socket) {
   };
 }
 
+common.inheritsEventEmitter(ServerConnection);
+
 ServerConnection.prototype.send = function (buf) {
   this._debug('send: buffer=%s', buf.length);
   this._transfer.sendData(buf);
@@ -115,7 +118,7 @@ ServerConnection.prototype.send = function (buf) {
 ServerConnection.prototype.exit = function (callback) {
   this._debug('exit');
   this._exited = true;
-  this.once('close', common.callback(callback));
+  this._socket.once('close', common.callback(callback));
   this._socket.destroy();
 };
 
