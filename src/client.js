@@ -72,7 +72,7 @@ Client.prototype._connect = function () {
     } else {
       setTimeout(function () {
         self._connect();
-      }, common.default.reconnectWaiting);
+      }, common.reconnectWaiting());
     }
   });
 

@@ -128,4 +128,50 @@ describe('clouds-socket', function () {
     ], done);
   });
 
+  it('client auto reconnect', function (done) {
+    var host = support.getHost();
+    var port = support.getPort();
+    var s, c;
+    var counter = 0;
+    var times = 10;
+    var callNext = false;
+    async.series([
+      function (next) {
+        // 创建服务器
+        s = support.createServer({port: port, host: host});
+        s.on('listening', next);
+        s.on('error', function (err) {
+          throw err;
+        });
+        s.on('connection', function (client) {
+          counter++;
+          setTimeout(function () {
+            if (counter < times) {
+              client.exit();
+            }
+          }, 100);
+        });
+      },
+      function (next) {
+        // 客户端连接
+        c = support.createClient({port: port, host: host});
+        c.on('connect', function () {
+          if (counter >= times - 1) {
+            next();
+          }
+        });
+      },
+      support.wait(200),
+      function (next) {
+        // 检查计数器
+        assert.equal(counter, times);
+        next();
+      },
+      function (next) {
+        // 关闭服务器所有连接
+        support.exit(c, s, next);
+      }
+    ], done);
+  });
+
 });

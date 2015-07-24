@@ -19,6 +19,10 @@ exports.default = {};
 exports.default.reconnectWaiting = 500;
 
 
+exports.reconnectWaiting = function () {
+  return Math.random() * exports.default.reconnectWaiting;
+};
+
 exports.callback = function (fn) {
   if (fn) return fn;
   return function (err) {
