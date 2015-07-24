@@ -53,7 +53,7 @@ Client.prototype._connect = function () {
     if (self._pendingList.length > 0) {
       self._debug('processing pending list: length=%s', self._pendingList.length);
       self._pendingList.forEach(function (buf) {
-        self._send(buf);
+        self._transfer.sendData(buf);
       });
       self._pendingList = [];
     }
