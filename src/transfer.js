@@ -24,6 +24,7 @@ Transfer.prototype.receiveData = function (buf, isNewReceiving) {
   var self = this;
   self._debug('transfer: receiveData: buffer=%s, isNewReceiving=%s, cache.buffer=%s, cache.needLength=%s',
     buf.length, !!isNewReceiving, self._buffer.length, self._bufferNeedLength);
+
   if (self._bufferNeedLength > 0) {
 
     var allBuf = Buffer.concat([self._buffer, buf]);
@@ -43,6 +44,13 @@ Transfer.prototype.receiveData = function (buf, isNewReceiving) {
     }
 
   } else {
+
+    buf = Buffer.concat([self._buffer, buf]);
+    if (buf.length < 4) {
+      self._buffer = buf;
+      self.resume();
+      return;
+    }
 
     var info = common.unpackBuffer(buf);
     self._debug('transfer: needLength=%s, restBuffer=%s', info.needLength, info.restBuffer.length);
