@@ -31,6 +31,9 @@ exports.callback = function (fn) {
 };
 
 exports.packBuffer = function (buf) {
+  if (!Buffer.isBuffer(buf)) {
+    buf = new Buffer(buf.toString());
+  }
   var len = buf.length;
   var newBuf = new Buffer(len + 4);
   newBuf.writeUInt32BE(len, 0);
