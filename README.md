@@ -91,3 +91,7 @@ client.exit();
 
 96% coverage 225 SLOC
 
+
+## 授权协议
+
+MIT
