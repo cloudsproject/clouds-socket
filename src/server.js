@@ -91,7 +91,7 @@ function ServerConnection (socket) {
   self._exited = false;
 
   self._socket = socket;
-  self._transfer = new Transfer(self._socket, self._debug);
+  self._transfer = Transfer.create(self._socket, self._debug);
 
   self._socket.on('error', function (err) {
     self._debug('connection error: host=%s, port=%s, error=%s', socket.remoteAddress, socket.remotePort, err);

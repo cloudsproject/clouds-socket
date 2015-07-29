@@ -50,9 +50,3 @@ exports.unpackBuffer = function (buf) {
     restBuffer: buf.slice(len + 4)
   };
 };
-
-common.extendBase = function (obj, socket) {
-  self._socket.on('data', function (buf) {
-    self._receiveData(buf);
-  });
-};

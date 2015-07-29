@@ -118,8 +118,8 @@ Transfer.prototype.processDataNextTime = function (buf, reason) {
 };
 
 
-Transfer.create = function (socket) {
-  return new Transfer(socket);
+Transfer.create = function (socket, debug) {
+  return new Transfer(socket, debug);
 };
 
 module.exports = Transfer;

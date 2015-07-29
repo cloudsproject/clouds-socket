@@ -44,7 +44,7 @@ Client.prototype._connect = function () {
   self._exited = false;
 
   self._socket = new net.Socket();
-  self._transfer = new Transfer(self._socket, self._debug);
+  self._transfer = Transfer.create(self._socket, self._debug);
   self._socket.connect(self._options.port, self._options.host);
 
   self._socket.once('connect', function () {
