@@ -290,7 +290,7 @@ describe('clouds-socket', function () {
     var port = support.getPort();
     var s, c1;
 
-    var len = 1024;
+    var len = 10;
     var times = 10000;
     var msg1 = support.randomString(len);
     var msgBuf1 = new Buffer(msg1);
