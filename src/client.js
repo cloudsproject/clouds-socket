@@ -1,5 +1,5 @@
 /**
- * clouds-controller
+ * clouds-socket
  *
  * @author Zongmin Lei <leizongmin@gmail.com>
  */

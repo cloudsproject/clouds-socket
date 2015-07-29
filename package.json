@@ -1,5 +1,5 @@
 {
-  "name": "clouds-client",
+  "name": "clouds-socket",
   "version": "0.2.0-beta-1",
   "description": "lightweight micro-services frameworks",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "ssh://git@git.isncer.com:2345/leizongmin/clouds-client.git"
+    "url": "ssh://git@git.isncer.com:2345/leizongmin/clouds-socket.git"
   },
   "author": "Zongmin Lei <leizongmin@gmail.com>",
   "license": "MIT",
