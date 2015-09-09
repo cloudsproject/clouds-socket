@@ -1,0 +1,6 @@
+#!/bin/sh
+
+export DEBUG=none
+export TEST_USE_UNIX_DOMAIN=false
+
+node test_$1

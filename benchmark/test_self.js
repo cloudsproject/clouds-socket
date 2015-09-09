@@ -12,11 +12,9 @@ var support = require('../test/support');
 
 function test (num, msg, callback) {
   var timestamp = Date.now();
+  var address = config.getListenAddress();
 
-  var s = socket.createServer({
-    host: config.host,
-    port: config.port
-  });
+  var s = socket.createServer(address);
   s.on('listening', start);
   s.on('connection', function (c) {
     c.on('data', function (d) {
@@ -24,10 +22,7 @@ function test (num, msg, callback) {
     });
   });
 
-  var c = socket.createClient({
-    host: config.host,
-    port: config.port
-  });
+  var c = socket.createClient(address);
 
   function start () {
     var counter = 0;
