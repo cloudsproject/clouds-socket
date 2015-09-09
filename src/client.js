@@ -17,16 +17,20 @@ var debug = common.debug('client');
  * @param  {Object} options
  *   - {String} host
  *   - {Number} port
+ *   - {String} path
  * @return {Socket}
  */
 function Client (options) {
-  assert(options.host, 'missing parameter `host`');
-  assert(options.port, 'missing parameter `port`');
+  if (!options.path) {
+    assert(options.host, 'missing parameter `host`');
+    assert(options.port, 'missing parameter `port`');
+  }
 
   this._options = common.merge(options);
   Client._counter++;
   this._debug = common.debug('client:#' + Client._counter);
 
+  this._exited = false;
   this._connect();
 }
 
@@ -37,15 +41,24 @@ Client._counter = 0;
 
 Client.prototype._connect = function () {
   var self = this;
-  self._debug('connecting: host=%s, port=%s', self._options.host, self._options.port);
+
+  if (self._exited) {
+    self._debug('client was exited, cancel connecting');
+    return;
+  }
 
   self._pendingList = [];
   self._connected = false;
-  self._exited = false;
 
   self._socket = new net.Socket();
   self._transfer = Transfer.create(self._socket, self._debug);
-  self._socket.connect(self._options.port, self._options.host);
+  if (self._options.path) {
+    self._debug('connecting: path=%s', self._options.path);
+    self._socket.connect({path: self._options.path});
+  } else {
+    self._debug('connecting: host=%s, port=%s', self._options.host, self._options.port);
+    self._socket.connect({port: self._options.port, host: self._options.host});
+  }
 
   self._socket.once('connect', function () {
     self._connected = true;
@@ -67,12 +80,15 @@ Client.prototype._connect = function () {
 
   self._socket.once('close', function () {
     self._debug('connection closed');
+    self.emit('close');
     if (self._exited) {
       self.emit('exit');
     } else {
+      var waitingTime = common.reconnectWaiting();
+      self._debug('try reconnect after %sms...', waitingTime);
       setTimeout(function () {
         self._connect();
-      }, common.reconnectWaiting());
+      }, waitingTime);
     }
   });
 

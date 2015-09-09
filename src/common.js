@@ -20,7 +20,7 @@ exports.default.reconnectWaiting = 500;
 
 
 exports.reconnectWaiting = function () {
-  return Math.random() * exports.default.reconnectWaiting;
+  return parseInt(Math.random() * exports.default.reconnectWaiting, 10);
 };
 
 exports.callback = function (fn) {

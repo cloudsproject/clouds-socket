@@ -1,7 +1,7 @@
 #!/bin/sh
 
 export DEBUG=clouds:*
-export TEST_USE_UNIX_DOMAIN=false
+export TEST_USE_UNIX_DOMAIN=true
 
 # 执行测试，如果指定了参数，则只测试指定文件
 if [ $1 ]

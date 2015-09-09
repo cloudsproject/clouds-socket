@@ -17,12 +17,15 @@ var debug = common.debug('server');
  * @param  {Object} options
  *   - {String} host
  *   - {Number} port
+ *   - {String} path
  * @return {Socket}
  */
 
 function Server (options) {
-  assert(options.host, 'missing parameter `host`');
-  assert(options.port, 'missing parameter `port`');
+  if (!options.path) {
+    assert(options.host, 'missing parameter `host`');
+    assert(options.port, 'missing parameter `port`');
+  }
 
   this._options = common.merge(options);
   Server._counter++;
@@ -44,7 +47,7 @@ Server.prototype._listen = function () {
   self._socket = new net.Server();
 
   self._socket.on('error', function (err) {
-    self._debug('server error: host=%s, port=%s, error=%s', self._options.host, self._options.port, err);
+    self._debug('server error: host=%s, port=%s, path=%s, error=%s', self._options.host, self._options.port, self._options.path, err);
     self.emit('error', err);
   });
 
@@ -55,7 +58,7 @@ Server.prototype._listen = function () {
 
   self._socket.on('listening', function () {
     self._listening = true;
-    self._debug('listening: host=%s, port=%s', self._options.host, self._options.port);
+    self._debug('listening: host=%s, port=%s, path=%s', self._options.host, self._options.port, self._options.path);
     self.emit('listening');
   });
 
@@ -64,7 +67,11 @@ Server.prototype._listen = function () {
     self.emit('connection', self._wrapClient(socket));
   });
 
-  self._socket.listen(self._options.port, self._options.host);
+  if (self._options.path) {
+    self._socket.listen({path: self._options.path});
+  } else {
+    self._socket.listen({port: self._options.port, host: self._options.host});
+  }
 };
 
 Server.prototype._wrapClient = function (socket) {

@@ -5,9 +5,16 @@
  */
 
 var assert = require('assert');
+var os = require('os');
+var path = require('path');
 var async = require('async');
 var utils = require('lei-utils');
 var socket = require('../');
+
+
+var basePort = 7001;
+var unixDomainPath = path.resolve(os.tmpDir(), 'clouds-socket-' + Date.now() + '-');
+var isUseUnixDomain = (process.env.TEST_USE_UNIX_DOMAIN == 'true');
 
 
 global.async = async;
@@ -23,10 +30,12 @@ exports.createServer = function (options) {
   return socket.createServer(options);
 };
 
-var basePort = 7001;
-
 exports.getListenAddress = function () {
-  return {port: basePort++, host: '127.0.0.1'};
+  if (isUseUnixDomain) {
+    return {path: unixDomainPath + (basePort++)};
+  } else {
+    return {port: basePort++, host: '127.0.0.1'};
+  }
 };
 
 exports.exit = function () {

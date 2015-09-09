@@ -142,9 +142,7 @@ describe('clouds-socket', function () {
         s.on('connection', function (client) {
           counter++;
           setTimeout(function () {
-            if (counter < times) {
-              client.exit();
-            }
+            client.exit();
           }, 100);
         });
       },
@@ -152,20 +150,20 @@ describe('clouds-socket', function () {
         // 客户端连接
         c = support.createClient(address);
         c.on('connect', function () {
-          if (counter >= times - 1) {
-            next();
+          if (counter >= times) {
+            c.exit(next);
           }
         });
       },
       support.wait(200),
       function (next) {
         // 检查计数器
-        assert.equal(counter, times);
+        assert.ok(counter >= times);
         next();
       },
       function (next) {
         // 关闭服务器所有连接
-        support.exit(c, s, next);
+        support.exit(s, next);
       }
     ], done);
   });
