@@ -95,7 +95,7 @@ client.exit();
 
 ## 测试代码覆盖率
 
-96% coverage 225 SLOC
+94% coverage 238 SLOC
 
 
 ## 授权协议
