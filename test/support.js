@@ -25,12 +25,8 @@ exports.createServer = function (options) {
 
 var basePort = 7001;
 
-exports.getPort = function () {
-  return basePort++;
-};
-
-exports.getHost = function () {
-  return '127.0.0.1';
+exports.getListenAddress = function () {
+  return {port: basePort++, host: '127.0.0.1'};
 };
 
 exports.exit = function () {

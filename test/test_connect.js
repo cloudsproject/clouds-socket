@@ -10,13 +10,12 @@ var support = require('./support');
 describe('clouds-socket', function () {
 
   it('server.listen() & client.connect()', function (done) {
-    var host = support.getHost();
-    var port = support.getPort();
+    var address = support.getListenAddress();
     var s, c1, c2;
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer({port: port, host: host});
+        s = support.createServer(address);
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
@@ -24,12 +23,12 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient({port: port, host: host});
+        c1 = support.createClient(address);
         c1.on('connect', next);
       },
       function (next) {
         // 客户端连接
-        c2 = support.createClient({port: port, host: host});
+        c2 = support.createClient(address);
         c2.on('connect', next);
       },
       function (next) {
@@ -48,13 +47,12 @@ describe('clouds-socket', function () {
   });
 
   it('server.listen() & client.connect() - event `exit`', function (done) {
-    var host = support.getHost();
-    var port = support.getPort();
+    var address = support.getListenAddress();
     var s, c1, c2;
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer({port: port, host: host});
+        s = support.createServer(address);
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
@@ -62,12 +60,12 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient({port: port, host: host});
+        c1 = support.createClient(address);
         c1.on('connect', next);
       },
       function (next) {
         // 客户端连接
-        c2 = support.createClient({port: port, host: host});
+        c2 = support.createClient(address);
         c2.on('connect', next);
       },
       function (next) {
@@ -89,14 +87,13 @@ describe('clouds-socket', function () {
   });
 
   it('server event `connection`', function (done) {
-    var host = support.getHost();
-    var port = support.getPort();
+    var address = support.getListenAddress();
     var s, c1, c2;
     var counter = 0;
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer({port: port, host: host});
+        s = support.createServer(address);
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
@@ -107,12 +104,12 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient({port: port, host: host});
+        c1 = support.createClient(address);
         c1.on('connect', next);
       },
       function (next) {
         // 客户端连接
-        c2 = support.createClient({port: port, host: host});
+        c2 = support.createClient(address);
         c2.on('connect', next);
       },
       support.wait(200),
@@ -129,8 +126,7 @@ describe('clouds-socket', function () {
   });
 
   it('client auto reconnect', function (done) {
-    var host = support.getHost();
-    var port = support.getPort();
+    var address = support.getListenAddress();
     var s, c;
     var counter = 0;
     var times = 10;
@@ -138,7 +134,7 @@ describe('clouds-socket', function () {
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer({port: port, host: host});
+        s = support.createServer(address);
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
@@ -154,7 +150,7 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c = support.createClient({port: port, host: host});
+        c = support.createClient(address);
         c.on('connect', function () {
           if (counter >= times - 1) {
             next();

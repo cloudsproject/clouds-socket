@@ -10,8 +10,7 @@ var support = require('./support');
 describe('clouds-socket', function () {
 
   it('send simple data', function (done) {
-    var host = support.getHost();
-    var port = support.getPort();
+    var address = support.getListenAddress();
     var s, c1, c2;
 
     var msg1 = support.randomString(20);
@@ -24,7 +23,7 @@ describe('clouds-socket', function () {
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer({port: port, host: host});
+        s = support.createServer(address);
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
@@ -38,7 +37,7 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient({port: port, host: host});
+        c1 = support.createClient(address);
         c1.on('connect', function () {
           c1.send(msgBuf2, next);
         });
@@ -48,7 +47,7 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c2 = support.createClient({port: port, host: host});
+        c2 = support.createClient(address);
         c2.on('connect', function () {
           c2.send(msgBuf2);
           c2.send(msgBuf2, next);
@@ -80,8 +79,7 @@ describe('clouds-socket', function () {
   });
 
   it('send simple data (string)', function (done) {
-    var host = support.getHost();
-    var port = support.getPort();
+    var address = support.getListenAddress();
     var s, c1, c2;
 
     var msg1 = support.randomString(20);
@@ -94,7 +92,7 @@ describe('clouds-socket', function () {
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer({port: port, host: host});
+        s = support.createServer(address);
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
@@ -108,7 +106,7 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient({port: port, host: host});
+        c1 = support.createClient(address);
         c1.on('connect', function () {
           c1.send(msg2, next);
         });
@@ -118,7 +116,7 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c2 = support.createClient({port: port, host: host});
+        c2 = support.createClient(address);
         c2.on('connect', function () {
           c2.send(msgBuf2);
           c2.send(msgBuf2, next);
@@ -150,8 +148,7 @@ describe('clouds-socket', function () {
   });
 
   it('send big data', function (done) {
-    var host = support.getHost();
-    var port = support.getPort();
+    var address = support.getListenAddress();
     var s, c1;
 
     var len = 65536 * 10;
@@ -165,7 +162,7 @@ describe('clouds-socket', function () {
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer({port: port, host: host});
+        s = support.createServer(address);
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
@@ -182,7 +179,7 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient({port: port, host: host});
+        c1 = support.createClient(address);
         c1.on('connect', function () {
           c1.send(msgBuf2);
           c1.send(msgBuf2);
@@ -218,8 +215,7 @@ describe('clouds-socket', function () {
   });
 
   it('send data before connected', function (done) {
-    var host = support.getHost();
-    var port = support.getPort();
+    var address = support.getListenAddress();
     var s, c1;
 
     var len = 655;
@@ -233,7 +229,7 @@ describe('clouds-socket', function () {
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer({port: port, host: host});
+        s = support.createServer(address);
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
@@ -250,7 +246,7 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient({port: port, host: host});
+        c1 = support.createClient(address);
         c1.on('connect', function () {
           c1.send(msgBuf2, next);
         });
@@ -286,8 +282,7 @@ describe('clouds-socket', function () {
   });
 
   it('send small data many times', function (done) {
-    var host = support.getHost();
-    var port = support.getPort();
+    var address = support.getListenAddress();
     var s, c1;
 
     var len = 10;
@@ -302,7 +297,7 @@ describe('clouds-socket', function () {
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer({port: port, host: host});
+        s = support.createServer(address);
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
@@ -318,7 +313,7 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient({port: port, host: host});
+        c1 = support.createClient(address);
         c1.on('connect', function () {
           var counter = 0;
           function callback (err) {
