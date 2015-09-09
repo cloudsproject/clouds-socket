@@ -16,8 +16,11 @@ var socket = require('clouds-socket');
 
 // 创建服务端实例
 var server = socket.createServer({
+  // TCP连接
   host: '127.0.0.1',
   port: 7001
+  // UNIX domain 连接
+  // path: '/tmp/clouds.sock'
 });
 
 // 当有新客户端连接时，触发connection事件
@@ -60,8 +63,11 @@ var socket = require('clouds-socket');
 
 // 创建客户端实例
 var client = socket.createClient({
+  // TCP连接
   host: '127.0.0.1',
   port: 7001
+  // UNIX domain 连接
+  // path: '/tmp/clouds.sock'
 });
 
 // 当连接成功时触发connect事件
