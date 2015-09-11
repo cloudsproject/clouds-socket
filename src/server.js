@@ -94,7 +94,11 @@ Server.create = function (options) {
 
 function ServerConnection (socket) {
   var self = this;
-  self._debug = common.debug('server:connection:' + socket.remoteAddress + ':' + socket.remotePort);
+  if (socket.remoteAddress && socket.remotePort) {
+    self._debug = common.debug('server:connection:' + socket.remoteAddress + ':' + socket.remotePort);
+  } else {
+    self._debug = common.debug('server:connection:unix-domain');
+  }
   self._exited = false;
 
   self._socket = socket;
