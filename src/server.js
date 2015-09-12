@@ -45,6 +45,14 @@ Server.prototype._listen = function () {
   self._exited = false;
 
   self._socket = new net.Server();
+  self._connections = {};
+
+  function addConnection (conn) {
+    self._connections[conn.id] = conn;
+    conn.once('exit', function () {
+      delete self._connections[conn.id];
+    });
+  }
 
   self._socket.on('error', function (err) {
     self._debug('server error: host=%s, port=%s, path=%s, error=%s', self._options.host, self._options.port, self._options.path, err);
@@ -64,7 +72,9 @@ Server.prototype._listen = function () {
 
   self._socket.on('connection', function (socket) {
     self._debug('new connection: host=%s, port=%s', socket.remoteAddress, socket.remotePort);
-    self.emit('connection', self._wrapClient(socket));
+    var client = self._wrapClient(socket);
+    addConnection(client);
+    self.emit('connection', client);
   });
 
   if (self._options.path) {
@@ -79,10 +89,19 @@ Server.prototype._wrapClient = function (socket) {
 };
 
 Server.prototype.exit = function (callback) {
-  this._debug('exit');
-  this._exited = true;
-  this._socket.once('close', common.callback(callback));
-  this._socket.close();
+  var self = this;
+  self._debug('exit');
+  self._exited = true;
+  self._socket.once('close', common.callback(callback));
+
+  // close all connections
+  for (var i in self._connections) {
+    var conn = self._connections[i];
+    if (conn._exited) continue;
+    conn.exit();
+  }
+
+  self._socket.close();
 };
 
 
@@ -100,6 +119,7 @@ function ServerConnection (socket) {
     self._debug = common.debug('server:connection:unix-domain');
   }
   self._exited = false;
+  self.id = Date.now() + '' + common.randomString(10);
 
   self._socket = socket;
   self._transfer = Transfer.create(self._socket, self._debug);
