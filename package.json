@@ -4,7 +4,7 @@
   "description": "lightweight micro-services frameworks",
   "main": "index.js",
   "scripts": {
-    "test": "./run_test && /run_test2"
+    "test": "./run_test && ./run_test2"
   },
   "repository": {
     "type": "git",
