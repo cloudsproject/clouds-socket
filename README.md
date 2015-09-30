@@ -9,7 +9,7 @@ $ npm install clouds-socket --save
 
 ## 使用
 
-服务端：
+### 服务端（TCP/Unix domain）
 
 ```javascript
 var socket = require('clouds-socket');
@@ -25,21 +25,7 @@ var server = socket.createServer({
 
 // 当有新客户端连接时，触发connection事件
 server.on('connection', function (client) {
-  // 当收到客户端发送来的数据时，触发data事件
-  client.on('data', function (data) {
-    console.log(data);
-  });
-  // 使用send()给客户端发送数据
-  client.send('hello');
-  client.send(new Buffer('hello'));
-  // 当发生错误时触发error事件
-  client.on('error', function (err) {
-    console.error(err);
-  });
-  // 当客户端断开连接时触发exit事件
-  client.once('exit', function () {
-    console.log('client disconnected');
-  });
+  // 用法与下文的「客户端」相同
 });
 
 // 当发生错误时触发error事件
@@ -56,7 +42,7 @@ server.on('exit', function () {
 server.exit();
 ```
 
-客户端：
+### 客户端（TCP/Unix domain）
 
 ```javascript
 var socket = require('clouds-socket');
@@ -83,6 +69,11 @@ client.ping(function (err, delay) {
   console.log('delay=%sms', delay);
 });
 
+// 当收到数据时，触发data事件
+client.on('data', function (data) {
+  console.log(data);
+});
+
 // 当发生错误时触发error事件
 client.on('error', function (err) {
   console.error(err);
@@ -95,6 +86,43 @@ client.on('exit', function () {
 
 // 关闭连接
 client.exit();
+```
+
+*TODO 数据报文（UDP）：
+
+```javascript
+var socket = require('clouds-socket');
+
+// 创建实例
+var datagram = socket.createDatagram();
+
+// 监听端口
+datagram.listen({
+  host: '127.0.0.1',
+  port: 7001
+});
+
+// 发送数据
+datagram.send('127.0.0.1', 7001, new Buffer('world'), callback);
+
+// 当收到数据时，触发data事件
+datagram.on('data', function (addr, data) {
+  console.log('data from host=%s, port=%s', addr.host, addr.port);
+  console.log(data);
+});
+
+// 当发生错误时触发error事件
+datagram.on('error', function (err) {
+  console.error(err);
+});
+
+// 当退出服务端时触发exit事件
+datagram.on('exit', function () {
+  console.log('exited');
+});
+
+// 关闭连接
+datagram.exit();
 ```
 
 
