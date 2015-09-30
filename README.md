@@ -78,6 +78,11 @@ client.on('connect', function () {
   client.send(new Buffer('world'));
 });
 
+// 测试网络延时
+client.ping(function (err, delay) {
+  console.log('delay=%sms', delay);
+});
+
 // 当发生错误时触发error事件
 client.on('error', function (err) {
   console.error(err);
