@@ -66,7 +66,7 @@ Client.prototype._connect = function () {
     if (self._pendingList.length > 0) {
       self._debug('processing pending list: length=%s', self._pendingList.length);
       self._pendingList.forEach(function (buf) {
-        self._transfer.sendData(buf);
+        self._transfer.send(buf);
       });
       self._pendingList = [];
     }
@@ -92,9 +92,13 @@ Client.prototype._connect = function () {
     }
   });
 
-  self._transfer.process = function (buf) {
+  self._transfer.on('data', function (buf) {
     self.emit('data', buf);
-  };
+  });
+};
+
+Client.prototype.ping = function (callback) {
+  this._transfer.ping(callback);
 };
 
 Client.prototype.send = function (buf, callback) {
@@ -104,7 +108,7 @@ Client.prototype.send = function (buf, callback) {
     this._pendingList.push(buf);
     return;
   }
-  this._transfer.sendData(buf, callback);
+  this._transfer.send(buf, callback);
 };
 
 Client.prototype.exit = function (callback) {

@@ -20,6 +20,8 @@ function Transfer (socket, debug) {
   self.startReceiving();
 }
 
+common.inheritsEventEmitter(Transfer);
+
 Transfer.prototype.receiveData = function (buf, isNewReceiving) {
   var self = this;
   self._debug('transfer: receiveData: buffer=%s, isNewReceiving=%s, cache.buffer=%s, cache.needLength=%s',
@@ -31,7 +33,7 @@ Transfer.prototype.receiveData = function (buf, isNewReceiving) {
     var needLength = self._bufferNeedLength - buf.length;
     self._debug('transfer: _bufferNeedLength=%s, needLength=%s', self._bufferNeedLength, needLength);
     if (needLength === 0) {
-      self._process(allBuf);
+      self._process(common.unpackSingleBuffer(allBuf));
       self.startReceiving();
     } else if (needLength > 0) {
       self._buffer = allBuf;
@@ -40,7 +42,7 @@ Transfer.prototype.receiveData = function (buf, isNewReceiving) {
     } else {
       var newBuf = allBuf.slice(0, needLength);
       self.processDataNextTime(allBuf.slice(newBuf.length), '#1');
-      self._process(newBuf);
+      self._process(common.unpackSingleBuffer(newBuf));
     }
 
   } else {
@@ -53,34 +55,73 @@ Transfer.prototype.receiveData = function (buf, isNewReceiving) {
     }
 
     var info = common.unpackBuffer(buf);
-    self._debug('transfer: needLength=%s, restBuffer=%s', info.needLength, info.restBuffer.length);
+    self._debug('transfer: type=%s, needLength=%s, restBuffer=%s', info.type, info.needLength, info.restBuffer.length);
     if (info.needLength > 0) {
       self._buffer = info.buffer;
       self._bufferNeedLength = info.needLength;
       self.resume();
     } else if (info.needLength < 0) {
       self.processDataNextTime(info.restBuffer, '#2');
-      self._process(info.buffer);
+      self._process(info);
     } else {
-      self._process(info.buffer);
+      self._process(info);
       self.startReceiving();
     }
 
   }
 };
 
-Transfer.prototype.sendData = function (buf, callback) {
-  this._debug('transfer: sendData: buffer=%s, callback=%s', buf.length, !!callback);
+Transfer.prototype.ping = function (callback) {
+  if (typeof callback !== 'function') throw new TypeError('the first argument must be a callback function');
+  this._debug('transfer: ping');
+  var buf = Date.now().toString();
+  var data = common.packBuffer(buf, common.default.PACK_TYPE_PING);
+  this.once('pong', function (delay, timestamp) {
+    callback(null, delay, timestamp);
+  });
+  this._socket.write(data);
+};
+
+Transfer.prototype.pong = function (timestamp) {
+  this._debug('transfer: pong');
+  var buf = timestamp.toString();
+  var data = common.packBuffer(buf, common.default.PACK_TYPE_PONG);
+  this._socket.write(data);
+};
+
+Transfer.prototype.send = function (buf, callback) {
+  this._debug('transfer: send: buffer=%s, callback=%s', buf.length, !!callback);
+  var data = common.packBuffer(buf, common.default.PACK_TYPE_DATA);
   if (callback) {
-    this._socket.write(common.packBuffer(buf), common.callback(callback));
+    this._socket.write(data, common.callback(callback));
   } else {
-    this._socket.write(common.packBuffer(buf));
+    this._socket.write(data);
   }
 };
 
-Transfer.prototype._process = function (buf) {
-  this._debug('transfer: process: buffer=%s', buf.length);
-  this.process(buf);
+Transfer.prototype._process = function (info) {
+  this._debug('transfer: process: type=%s, buffers=%s', info.type, info.length);
+  switch (info.type) {
+    case common.default.PACK_TYPE_DATA:
+      this.emit('data', info.buffer);
+      break;
+    case common.default.PACK_TYPE_PING:
+      this.pong(info.buffer.toString());
+      this.emit('ping', Number(info.buffer.toString()))
+      break;
+    case common.default.PACK_TYPE_PONG:
+      this._emitPong(info.buffer.toString());
+      break;
+    default:
+      this._debug('transfer: unknown type=%s', info.type);
+  }
+};
+
+Transfer.prototype._emitPong = function (timestamp) {
+  timestamp = Number(timestamp);
+  var delay = Date.now() - timestamp;
+  if (!(delay >= 0)) delay = -1;
+  this.emit('pong', delay, timestamp);
 };
 
 Transfer.prototype.process = function () {

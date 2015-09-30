@@ -17,6 +17,11 @@ var debug = exports.debug('common');
 
 var DEFAULT = exports.default = {};
 DEFAULT.reconnectWaiting = 500;
+DEFAULT.BUFFER_LENGTH_BYTE_SIZE = 4;
+DEFAULT.PACK_TYPE_BYTE_SIZE = 1;
+DEFAULT.PACK_TYPE_DATA = 0;
+DEFAULT.PACK_TYPE_PING = 1;
+DEFAULT.PACK_TYPE_PONG = 2;
 
 
 exports.reconnectWaiting = function () {
@@ -30,25 +35,38 @@ exports.callback = function (fn) {
   };
 };
 
-var BUFFER_LENGTH_BYTE_SIZE = 4;
 
-exports.packBuffer = function (buf) {
+exports.packBuffer = function (buf, type) {
   if (!Buffer.isBuffer(buf)) {
     buf = new Buffer(buf.toString());
   }
+  type = type || DEFAULT.PACK_TYPE_DATA;
   var len = buf.length;
-  var newBuf = new Buffer(len + BUFFER_LENGTH_BYTE_SIZE);
-  newBuf.writeUInt32BE(len, 0);
-  buf.copy(newBuf, BUFFER_LENGTH_BYTE_SIZE);
+  var newBuf = new Buffer(len + DEFAULT.BUFFER_LENGTH_BYTE_SIZE + DEFAULT.PACK_TYPE_BYTE_SIZE);
+  newBuf.writeUInt8(type, 0);
+  newBuf.writeUInt32BE(len, DEFAULT.PACK_TYPE_BYTE_SIZE);
+  buf.copy(newBuf, DEFAULT.PACK_TYPE_BYTE_SIZE + DEFAULT.BUFFER_LENGTH_BYTE_SIZE);
   return newBuf;
 };
 
 exports.unpackBuffer = function (buf) {
-  var len = buf.readUInt32BE(0);
+  var len = buf.readUInt32BE(DEFAULT.PACK_TYPE_BYTE_SIZE);
   return {
+    type: buf.readUInt8(0),
     length: len,
-    needLength: len - (buf.length - BUFFER_LENGTH_BYTE_SIZE),
-    buffer: buf.slice(BUFFER_LENGTH_BYTE_SIZE, len + BUFFER_LENGTH_BYTE_SIZE),
-    restBuffer: buf.slice(len + BUFFER_LENGTH_BYTE_SIZE)
+    needLength: len - (buf.length - DEFAULT.BUFFER_LENGTH_BYTE_SIZE - DEFAULT.PACK_TYPE_BYTE_SIZE),
+    buffer: buf.slice(DEFAULT.PACK_TYPE_BYTE_SIZE + DEFAULT.BUFFER_LENGTH_BYTE_SIZE, len + DEFAULT.PACK_TYPE_BYTE_SIZE + DEFAULT.BUFFER_LENGTH_BYTE_SIZE),
+    restBuffer: buf.slice(len + DEFAULT.PACK_TYPE_BYTE_SIZE + DEFAULT.BUFFER_LENGTH_BYTE_SIZE)
   };
 };
+
+exports.unpackSingleBuffer = function (buf) {
+  return {
+    type: DEFAULT.PACK_TYPE_DATA,
+    length: buf.length,
+    needLength: 0,
+    buffer: buf,
+    restBuffer: new Buffer(0)
+  };
+};
+

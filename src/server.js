@@ -134,16 +134,20 @@ function ServerConnection (socket) {
     self.emit('exit');
   });
 
-  self._transfer.process = function (buf) {
+  self._transfer.on('data', function (buf) {
     self.emit('data', buf);
-  };
+  });
 }
 
 common.inheritsEventEmitter(ServerConnection);
 
+ServerConnection.prototype.ping = function (callback) {
+  this._transfer.ping(callback);
+};
+
 ServerConnection.prototype.send = function (buf, callback) {
   this._debug('send: buffer=%s', buf.length);
-  this._transfer.sendData(buf, callback);
+  this._transfer.send(buf, callback);
 };
 
 ServerConnection.prototype.exit = function (callback) {
