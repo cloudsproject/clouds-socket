@@ -15,8 +15,8 @@ exports.debug = function (name) {
 var debug = exports.debug('common');
 
 
-exports.default = {};
-exports.default.reconnectWaiting = 500;
+var DEFAULT = exports.default = {};
+DEFAULT.reconnectWaiting = 500;
 
 
 exports.reconnectWaiting = function () {
@@ -30,14 +30,16 @@ exports.callback = function (fn) {
   };
 };
 
+var BUFFER_LENGTH_BYTE_SIZE = 4;
+
 exports.packBuffer = function (buf) {
   if (!Buffer.isBuffer(buf)) {
     buf = new Buffer(buf.toString());
   }
   var len = buf.length;
-  var newBuf = new Buffer(len + 4);
+  var newBuf = new Buffer(len + BUFFER_LENGTH_BYTE_SIZE);
   newBuf.writeUInt32BE(len, 0);
-  buf.copy(newBuf, 4);
+  buf.copy(newBuf, BUFFER_LENGTH_BYTE_SIZE);
   return newBuf;
 };
 
@@ -45,8 +47,8 @@ exports.unpackBuffer = function (buf) {
   var len = buf.readUInt32BE(0);
   return {
     length: len,
-    needLength: len - (buf.length - 4),
-    buffer: buf.slice(4, len + 4),
-    restBuffer: buf.slice(len + 4)
+    needLength: len - (buf.length - BUFFER_LENGTH_BYTE_SIZE),
+    buffer: buf.slice(BUFFER_LENGTH_BYTE_SIZE, len + BUFFER_LENGTH_BYTE_SIZE),
+    restBuffer: buf.slice(len + BUFFER_LENGTH_BYTE_SIZE)
   };
 };
