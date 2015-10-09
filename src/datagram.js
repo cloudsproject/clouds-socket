@@ -8,7 +8,6 @@ var assert = require('assert');
 var dgram = require('dgram');
 var async = require('async');
 var common = require('./common');
-var Transfer = require('./transfer');
 var debug = common.debug('datagram');
 
 //------------------------------------------------------------------------------
@@ -114,9 +113,9 @@ function concatDatagramPackages (list) {
   });
   var first = list[0];
   list.forEach(function (item, i) {
-    assert(first.number === item.number, '[#' + i + '] invalid field `number`');
-    assert(first.packageSize === item.packageSize, '[#' + i + '] invalid field `number`');
-    assert(first.totalLength === item.totalLength, '[#' + i + '] invalid field `number`');
+    assert(first.number === item.number, 'package #' + i + ' invalid field `number`');
+    assert(first.packageSize === item.packageSize, 'package #' + i + ' invalid field `number`');
+    assert(first.totalLength === item.totalLength, 'package #' + i + ' invalid field `number`');
   });
   var buf = new Buffer(first.totalLength);
   list.forEach(function (b) {
@@ -308,6 +307,7 @@ module.exports = Datagram;
 var a = new Datagram();
 var b = new Datagram();
 a.listen({host: '127.0.0.1', port: 7001});
+b.listen({host: '127.0.0.1', port: 7002});
 a.on('listening', function () {
   b.send('127.0.0.1', 7001, 'abcdefg', console.log);
   b.send('127.0.0.1', 7001, '66666667777778888888', console.log);
