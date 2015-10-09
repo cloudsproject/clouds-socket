@@ -70,3 +70,9 @@ exports.unpackSingleBuffer = function (buf) {
   };
 };
 
+exports.objectForEach = function (obj, fn) {
+  Object.keys(obj).forEach(function (k) {
+    fn(k, obj[k]);
+  });
+};
+

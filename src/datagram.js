@@ -14,6 +14,9 @@ var debug = common.debug('datagram');
 //------------------------------------------------------------------------------
 var MAX_MESSAGE_LENGTH = 63 * 1024;
 var MAX_MESSAGE_LENGTH = 10;
+var CHECK_BUFFER_INTERVAL = 500;
+var BUFFER_SENT_TIMEOUT = 5000;
+var BUFFER_RECEVIED_TIMEOUT = 2000;
 
 function packDatagramBuffer (num, buf) {
   if (!Buffer.isBuffer(buf)) {
@@ -45,7 +48,7 @@ function packDatagramBuffer (num, buf) {
     offset += b.length;
     return item;
   });
-  list = list.map(function (b) {
+  var buffers = list.map(function (b) {
     var buf = new Buffer(24 + b.length);
     buf.writeUIntBE(b.timestamp, 0, 6);     // 6B
     buf.writeUInt32BE(b.number, 6);         // 4B
@@ -57,7 +60,8 @@ function packDatagramBuffer (num, buf) {
     b.buffer.copy(buf, 24);                 // 4B
     return buf;
   });
-  return list;
+
+  return {list: list, buffers: buffers};
 }
 
 function unpackDatagramBufferList (list) {
@@ -101,18 +105,6 @@ function concatDatagramPackages (list) {
 }
 
 
-/*
-var data = common.randomString(1024 * 1024);
-console.log(data.length);
-var packages = packDatagramBuffer(1, data);
-console.log(packages);
-var list = unpackDatagramBufferList(packages);
-console.log(list);
-var buf = concatDatagramPackages(list);
-console.log(buf.length);
-assert(data, buf.toString());
-*/
-
 //------------------------------------------------------------------------------
 
 /**
@@ -121,21 +113,27 @@ assert(data, buf.toString());
  * @param  {Object} options
  *   - {String} host
  *   - {Number} port
+ *   - {Number} checkBufferInterval
+ *   - {Number} bufferSentTimeout
+ *   - {Number} bufferReceviedTimeout
  * @return {Socket}
  */
 function Datagram (options) {
+  var self = this;
   Datagram._counter++;
-  this._debug = common.debug('client:#' + Datagram._counter);
+  self._debug = common.debug('client:#' + Datagram._counter);
 
   options = options || {};
-  this._options = options;
+  options.checkBufferInterval = options.checkBufferInterval || CHECK_BUFFER_INTERVAL;
+  options.bufferSentTimeout = options.bufferSentTimeout || BUFFER_SENT_TIMEOUT;
+  options.bufferReceviedTimeout = options.bufferReceviedTimeout || BUFFER_RECEVIED_TIMEOUT;
+  self._options = options;
 
-  var server = this._server = dgram.createSocket('udp4');
-  var self = this;
+  var server = self._server = dgram.createSocket('udp4');
 
-  this._sendBufferNumber = 0;
-  this._sendBuffers = {};
-  this._receviedBuffers = {};
+  self._sendBufferNumber = 0;
+  self._sendBuffers = {};
+  self._receviedBuffers = {};
 
   server.on('message', function (buf, addr) {
     self._debug('received %d bytes from %s:%d', buf.length, addr.address, addr.port);
@@ -155,7 +153,26 @@ function Datagram (options) {
     self.emit('exit');
   });
 
-  this._exited = false;
+  self._tidCheckBuffer = setInterval(function () {
+
+    self._debug('check received buffer');
+    common.objectForEach(self._receviedBuffers, function (key, list) {
+      self._checkReceviedBuffer(key);
+    });
+
+    self._debug('check sent buffer');
+    var timeout = Date.now() - self._options.bufferSentTimeout;
+    common.objectForEach(self._sendBuffers, function (key, list) {
+      var first = list[0];
+      if (first.timestamp < timeout) {
+        self._debug('cleam sent buffer: key=%s, timestamp=%s, buf=%s', key, first.timestamp, first.totalLength);
+        delete self._sendBuffers[key];
+      }
+    });
+
+  }, options.checkBufferInterval);
+
+  self._exited = false;
 }
 
 common.inheritsEventEmitter(Datagram);
@@ -226,11 +243,11 @@ Datagram.prototype.send = function (host, port, buf, callback) {
   self._debug('send: host=%s, port=%s, buf=%s', host, port, buf.length);
 
   var num = self._sendBufferNumber++;
-  var list = packDatagramBuffer(num, buf);
+  var data = packDatagramBuffer(num, buf);
   var key = self._getBufferKey(host, port, num);
-  self._sendBuffers[key] = list;
+  self._sendBuffers[key] = data.list;
 
-  async.eachSeries(list, function (b, next) {
+  async.eachSeries(data.buffers, function (b, next) {
     self._server.send(b, 0, b.length, port, host, next);
   }, common.callback(callback));
 };
@@ -250,7 +267,7 @@ Datagram.create = function (options) {
 module.exports = Datagram;
 
 
-
+/*
 var a = new Datagram();
 var b = new Datagram();
 a.listen({host: '127.0.0.1', port: 7001});
@@ -263,5 +280,10 @@ a.on('data', function (addr, data) {
   console.log(data, data.toString());
   //console.log(a);
   console.log(b);
-  process.exit();
+  //process.exit();
 });
+setTimeout(function () {
+  console.log(b);
+  process.exit();
+}, 8000);
+*/
