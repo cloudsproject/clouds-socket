@@ -6,12 +6,14 @@
 
 var assert = require('assert');
 var dgram = require('dgram');
+var async = require('async');
 var common = require('./common');
 var Transfer = require('./transfer');
 var debug = common.debug('datagram');
 
 //------------------------------------------------------------------------------
 var MAX_MESSAGE_LENGTH = 63 * 1024;
+var MAX_MESSAGE_LENGTH = 10;
 
 function packDatagramBuffer (num, buf) {
   if (!Buffer.isBuffer(buf)) {
@@ -131,9 +133,13 @@ function Datagram (options) {
   var server = this._server = dgram.createSocket('udp4');
   var self = this;
 
-  server.on('message', function (msg, rinfo) {
-    self._debug('received %d bytes from %s:%d', msg.length, rinfo.address, rinfo.port);
-    self._receivedMessage(msg, rinfo);
+  this._sendBufferNumber = 0;
+  this._sendBuffers = {};
+  this._receviedBuffers = {};
+
+  server.on('message', function (buf, addr) {
+    self._debug('received %d bytes from %s:%d', buf.length, addr.address, addr.port);
+    self._receivedMessage(buf, addr);
   });
   server.on('listening', function () {
     self._listening = true;
@@ -150,15 +156,51 @@ function Datagram (options) {
   });
 
   this._exited = false;
-  this._connect();
 }
 
 common.inheritsEventEmitter(Datagram);
 
 Datagram._counter = 0;
 
-Datagram.prototype._receivedMessage = function (msg, rinfo) {
+Datagram.prototype._getBufferKey = function (host, port, num) {
+  return host + ':' + port + ':' + num;
+};
 
+Datagram.prototype._getAddrFromBufferKey = function (key) {
+  var s = key.split(':');
+  return {host: s[0], port: Number(s[1])};
+};
+
+Datagram.prototype._receivedMessage = function (buf, addr) {
+  var info = unpackDatagramBufferItem(buf);
+
+  if (info.packageSize === 1) {
+    this.emit('data', {host: addr.address, port: addr.port}, info.buffer);
+    return;
+  }
+
+  var key = this._getBufferKey(addr.address, addr.port, info.number);
+  if (!this._receviedBuffers[key]) this._receviedBuffers[key] = [];
+  this._receviedBuffers[key][info.index] = info;
+  this._checkReceviedBuffer(key);
+};
+
+Datagram.prototype._checkReceviedBuffer = function (key) {
+  this._debug('_checkReceviedBuffer: key=%s', key);
+  var first = this._receviedBuffers[key] && this._receviedBuffers[key][0];
+  if (!first) return;
+
+  var count = 0;
+  for (var i = 0; i < this._receviedBuffers[key].length; i++) {
+    if (!this._receviedBuffers[key][i]) continue;
+    count++;
+  }
+
+  if (count === first.packageSize) {
+    var buf = concatDatagramPackages(this._receviedBuffers[key]);
+    delete this._receviedBuffers[key];
+    this.emit('data', this._getAddrFromBufferKey(key), buf);
+  }
 };
 
 Datagram.prototype.listen = function (options, callback) {
@@ -179,8 +221,18 @@ Datagram.prototype.ping = function (callback) {
 
 };
 
-Datagram.prototype.send = function (buf, callback) {
-  
+Datagram.prototype.send = function (host, port, buf, callback) {
+  var self = this;
+  self._debug('send: host=%s, port=%s, buf=%s', host, port, buf.length);
+
+  var num = self._sendBufferNumber++;
+  var list = packDatagramBuffer(num, buf);
+  var key = self._getBufferKey(host, port, num);
+  self._sendBuffers[key] = list;
+
+  async.eachSeries(list, function (b, next) {
+    self._server.send(b, 0, b.length, port, host, next);
+  }, common.callback(callback));
 };
 
 Datagram.prototype.exit = function (callback) {
@@ -196,3 +248,20 @@ Datagram.create = function (options) {
 };
 
 module.exports = Datagram;
+
+
+
+var a = new Datagram();
+var b = new Datagram();
+a.listen({host: '127.0.0.1', port: 7001});
+a.on('listening', function () {
+  b.send('127.0.0.1', 7001, 'abcdefg', console.log);
+  b.send('127.0.0.1', 7001, '66666667777778888888', console.log);
+});
+a.on('data', function (addr, data) {
+  console.log('data from host=%s, port=%s', addr.host, addr.port);
+  console.log(data, data.toString());
+  //console.log(a);
+  console.log(b);
+  process.exit();
+});

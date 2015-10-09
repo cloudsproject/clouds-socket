@@ -18,7 +18,6 @@
     "lei-utils": "^1.0.8"
   },
   "devDependencies": {
-    "async": "^1.4.0",
     "blanket": "^1.1.7",
     "mocha": "^2.2.5"
   },
