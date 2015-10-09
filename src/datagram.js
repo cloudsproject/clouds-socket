@@ -12,11 +12,32 @@ var Transfer = require('./transfer');
 var debug = common.debug('datagram');
 
 //------------------------------------------------------------------------------
+var PACK_TYPE_BYTE_SIZE = 1;
+var PACK_TYPE_DATA = 0;
+var PACK_TYPE_PING = 1;
+var PACK_TYPE_PONG = 2;
+var PACK_TYPE_DATA_RESEND = 3;
+
 var MAX_MESSAGE_LENGTH = 63 * 1024;
 var MAX_MESSAGE_LENGTH = 10;
 var CHECK_BUFFER_INTERVAL = 500;
 var BUFFER_SENT_TIMEOUT = 5000;
 var BUFFER_RECEVIED_TIMEOUT = 2000;
+
+function packMessage (buf, type) {
+  type = type || PACK_TYPE_DATA;
+  var newBuf = new Buffer(buf.length + PACK_TYPE_BYTE_SIZE);
+  newBuf.writeUInt8(type, 0);
+  buf.copy(newBuf, PACK_TYPE_BYTE_SIZE);
+  return newBuf;
+}
+
+function unpackMessage (buf) {
+  return {
+    type: buf.readUInt8(0),
+    buffer: buf.slice(1)
+  };
+}
 
 function packDatagramBuffer (num, buf) {
   if (!Buffer.isBuffer(buf)) {
@@ -136,8 +157,15 @@ function Datagram (options) {
   self._receviedBuffers = {};
 
   server.on('message', function (buf, addr) {
-    self._debug('received %d bytes from %s:%d', buf.length, addr.address, addr.port);
-    self._receivedMessage(buf, addr);
+    var info = unpackMessage(buf);
+    self._debug('received %d bytes from %s:%d, type=%s', buf.length, addr.address, addr.port, info.type);
+    switch (info.type) {
+      case PACK_TYPE_DATA:
+        self._receivedMessage(info.buffer, addr);
+        break;
+      default:
+        self._debug('unknown message type: %s', info.type);
+    }
   });
   server.on('listening', function () {
     self._listening = true;
@@ -208,9 +236,17 @@ Datagram.prototype._checkReceviedBuffer = function (key) {
   if (!first) return;
 
   var count = 0;
+  var timeout = Date.now() - this._options.bufferReceviedTimeout;
+  var needReSend = (first.timestamp < timeout);
+
   for (var i = 0; i < this._receviedBuffers[key].length; i++) {
-    if (!this._receviedBuffers[key][i]) continue;
-    count++;
+    if (this._receviedBuffers[key][i]) {
+      count++;
+    } else {
+      if (needReSend) {
+        this._debug('_checkReceviedBuffer: need resend: key=%s, index=%s', key, i);
+      }
+    }
   }
 
   if (count === first.packageSize) {
@@ -248,7 +284,8 @@ Datagram.prototype.send = function (host, port, buf, callback) {
   self._sendBuffers[key] = data.list;
 
   async.eachSeries(data.buffers, function (b, next) {
-    self._server.send(b, 0, b.length, port, host, next);
+    var buf = packMessage(b, PACK_TYPE_DATA);
+    self._server.send(buf, 0, buf.length, port, host, next);
   }, common.callback(callback));
 };
 
@@ -267,7 +304,7 @@ Datagram.create = function (options) {
 module.exports = Datagram;
 
 
-/*
+
 var a = new Datagram();
 var b = new Datagram();
 a.listen({host: '127.0.0.1', port: 7001});
@@ -279,11 +316,10 @@ a.on('data', function (addr, data) {
   console.log('data from host=%s, port=%s', addr.host, addr.port);
   console.log(data, data.toString());
   //console.log(a);
-  console.log(b);
+  //console.log(b);
   //process.exit();
 });
 setTimeout(function () {
   console.log(b);
   process.exit();
 }, 8000);
-*/
