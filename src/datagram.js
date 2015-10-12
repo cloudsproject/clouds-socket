@@ -17,7 +17,8 @@ var PACK_TYPE_PING = 1;
 var PACK_TYPE_PONG = 2;
 var PACK_TYPE_DATA_RESEND = 3;
 
-var MAX_MESSAGE_LENGTH = 63 * 1024;
+var MESSAGE_HEADER_SIZE = 25;
+var MAX_UDP_MESSAGE_SIZE = 9216;
 var CHECK_BUFFER_INTERVAL = 500;
 var BUFFER_SENT_TIMEOUT = 5000;
 var BUFFER_RECEVIED_TIMEOUT = 2000;
@@ -37,13 +38,14 @@ function unpackMessage (buf) {
   };
 }
 
-function packDatagramBuffer (num, buf) {
+function packDatagramBuffer (num, buf, maxUDPMessageSize) {
   if (!Buffer.isBuffer(buf)) {
     buf = new Buffer(buf.toString());
   }
   var list = [];
   var i = 0;
-  for (var j = 0; j = i + MAX_MESSAGE_LENGTH; i = j) {
+  var maxSize = maxUDPMessageSize - MESSAGE_HEADER_SIZE;
+  for (var j = 0; j = i + maxSize; i = j) {
     var b = buf.slice(i, j);
     if (b.length > 0) {
       list.push(b);
@@ -175,6 +177,7 @@ function unpackMessagePong (buf) {
  *   - {Number} checkBufferInterval
  *   - {Number} bufferSentTimeout
  *   - {Number} bufferReceviedTimeout
+ *   - {Number} maxUDPMessageSize
  * @return {Socket}
  */
 function Datagram (options) {
@@ -186,6 +189,7 @@ function Datagram (options) {
   options.checkBufferInterval = options.checkBufferInterval || CHECK_BUFFER_INTERVAL;
   options.bufferSentTimeout = options.bufferSentTimeout || BUFFER_SENT_TIMEOUT;
   options.bufferReceviedTimeout = options.bufferReceviedTimeout || BUFFER_RECEVIED_TIMEOUT;
+  options.maxUDPMessageSize = options.maxUDPMessageSize || MAX_UDP_MESSAGE_SIZE;
   self._options = options;
 
   var server = self._server = dgram.createSocket('udp4');
@@ -425,13 +429,18 @@ Datagram.prototype.send = function (host, port, buf, callback) {
   self._debug('send: host=%s, port=%s, buf=%s', host, port, buf.length);
 
   var num = self._sendBufferNumber++;
-  var buffers = packDatagramBuffer(num, buf);
+  var buffers = packDatagramBuffer(num, buf, self._options.maxUDPMessageSize);
   var key = self._getBufferKey(host, port, num);
   self._sendBuffers[key] = buffers;
+
+  // if (buffers.length > 1) {
+  //   self._debug('send: buf=%s, packageSize=%s', buf.length, buffers.length);
+  // }
 
   async.eachSeries(buffers, function (b, next) {
 
     var buf = packMessage(b.send, PACK_TYPE_DATA);
+    self._debug('send package: buf=%s', buf.length);
     self._server.send(buf, 0, buf.length, port, host, next);
 
   }, common.callback(callback));
