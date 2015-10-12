@@ -88,7 +88,7 @@ client.on('exit', function () {
 client.exit();
 ```
 
-### *TODO 数据报文（UDP）：
+### 数据报文（UDP）：
 
 ```javascript
 var socket = require('clouds-socket');
@@ -98,12 +98,17 @@ var datagram = socket.createDatagram();
 
 // 监听端口
 datagram.listen({
-  host: '127.0.0.1',
-  port: 7001
+  host: '127.0.0.1', // 监听地址，可选
+  port: 7001         // 监听端口，可选
 });
 
 // 发送数据
 datagram.send('127.0.0.1', 7001, new Buffer('world'), callback);
+
+// 测试网络延时
+datagram.ping('127.0.0.1', 7001, function (err, delay) {
+  console.log('delay=%sms', delay);
+});
 
 // 当收到数据时，触发data事件
 datagram.on('data', function (addr, data) {
