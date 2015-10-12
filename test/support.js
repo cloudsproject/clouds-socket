@@ -30,12 +30,20 @@ exports.createServer = function (options) {
   return socket.createServer(options);
 };
 
+exports.createDatagram = function (options) {
+  return socket.createDatagram(options);
+};
+
 exports.getListenAddress = function () {
   if (isUseUnixDomain) {
     return {path: unixDomainPath + (basePort++)};
   } else {
     return {port: basePort++, host: '127.0.0.1'};
   }
+};
+
+exports.getUDPListenAddress = function () {
+  return {port: basePort++, host: '127.0.0.1'};
 };
 
 exports.exit = function () {
