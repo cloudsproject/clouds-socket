@@ -18,7 +18,6 @@ var PACK_TYPE_PONG = 2;
 var PACK_TYPE_DATA_RESEND = 3;
 
 var MAX_MESSAGE_LENGTH = 63 * 1024;
-var MAX_MESSAGE_LENGTH = 10; // TODO: debug
 var CHECK_BUFFER_INTERVAL = 500;
 var BUFFER_SENT_TIMEOUT = 5000;
 var BUFFER_RECEVIED_TIMEOUT = 2000;
@@ -452,35 +451,3 @@ Datagram.create = function (options) {
 };
 
 module.exports = Datagram;
-
-
-
-var a = new Datagram({host: '127.0.0.1', port: 7001});
-var b = new Datagram();
-a.listen();
-b.listen({host: '127.0.0.1', port: 7002});
-a.on('listening', function () {
-  b.send('127.0.0.1', 7001, 'abcdefg', console.log);
-  b.send('127.0.0.1', 7001, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890', console.log);
-  b.ping('127.0.0.1', 7001, console.log);
-  b.ping('127.0.0.1', 7002, console.log);
-  a.ping('127.0.0.1', 7001, console.log);
-  a.ping('127.0.0.1', 7002, console.log);
-});
-a.on('data', function (addr, data) {
-  console.log('--------------------');
-  console.log('data from host=%s, port=%s', addr.host, addr.port);
-  console.log(data);
-  console.log(data.toString());
-  console.log('--------------------');
-  //console.log(a);
-  //console.log(b);
-  //process.exit();
-});
-setTimeout(function () {
-  //console.log(a);
-  //console.log(b);
-  a.exit();
-  b.exit();
-  //process.exit();
-}, 8000);
