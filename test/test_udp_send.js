@@ -215,12 +215,11 @@ describe('clouds-socket', function () {
     ], done);
   });
 
-return;
   it('send small data many times', function (done) {
     var address = support.getUDPListenAddress();
     var s, c1;
 
-    var len = 10;
+    var len = 100;
     var times = 10000;
     var msg1 = support.randomString(len);
     var msgBuf1 = new Buffer(msg1);
@@ -232,38 +231,23 @@ return;
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer(address);
+        s = support.createDatagram(address);
+        s.listen();
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
         });
-        s.on('connection', function (c) {
-          c.on('data', function (d) {
-            serverData.push(d);
-          });
-          for (var i = 0; i < times; i++) {
-            c.send(msgBuf1);
-          }
+        s.on('data', function (addr, d) {
+          serverData.push([addr, d]);
+          s.send(addr.host, addr.port, msgBuf1);
         });
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient(address);
-        c1.on('connect', function () {
-          var counter = 0;
-          function callback (err) {
-            assert.equal(err, null);
-            counter++;
-            if (counter >= times) {
-              allDone(done1 = true);
-            }
-          }
-          for (var i = 0; i < times; i++) {
-            c1.send(msgBuf2, callback);
-          }
-        });
-        c1.on('data', function (d) {
-          clientData.push(d);
+        c1 = support.createDatagram(address);
+
+        c1.on('data', function (addr, d) {
+          clientData.push([addr, d]);
           if (clientData.length >= times) {
             allDone(done2 = true);
           }
@@ -276,19 +260,35 @@ return;
             next();
           }
         }
+
+        var counter = 0;
+        function callback (err) {
+          assert.equal(err, null);
+          counter++;
+          if (counter >= times) {
+            allDone(done1 = true);
+          }
+        }
+        for (var i = 0; i < times; i++) {
+          setTimeout(function () {
+            c1.send(address.host, address.port, msgBuf2, callback);
+          }, i);
+        }
       },
       support.wait(200),
       function (next) {
         // 检查数据
         assert.equal(serverData.length, times);
         assert.equal(clientData.length, times);
-        serverData.forEach(function (d) {
-          assert.equal(d.length, msgBuf2.length);
-          assert.equal(d.toString(), msg2);
+        serverData.forEach(function (item) {
+          assert.equal(item[1].length, msgBuf1.length);
+          assert.equal(item[1].toString(), msg2);
         });
-        clientData.forEach(function (d) {
-          assert.equal(d.length, msgBuf1.length);
-          assert.equal(d.toString(), msg1);
+        clientData.forEach(function (item) {
+          assert.equal(item[1].length, msgBuf2.length);
+          assert.equal(item[1].toString(), msg1);
+          assert.equal(item[0].port, address.port);
+          assert.equal(item[0].host, address.host);
         });
         next();
       },
