@@ -145,6 +145,26 @@ function unpackMessageRequestReSendBuffer (buf) {
   };
 }
 
+function packMessagePing (timestamp) {
+  var buf = new Buffer(6);
+  buf.writeUIntBE(timestamp, 0, 6);
+  return packMessage(buf, PACK_TYPE_PING);
+}
+
+function unpackMessagePing (buf) {
+  return buf.readUIntBE(0, 6);
+}
+
+function packMessagePong (timestamp) {
+  var buf = new Buffer(6);
+  buf.writeUIntBE(timestamp, 0, 6);
+  return packMessage(buf, PACK_TYPE_PONG);
+}
+
+function unpackMessagePong (buf) {
+  return buf.readUIntBE(0, 6);
+}
+
 //------------------------------------------------------------------------------
 
 /**
@@ -174,6 +194,7 @@ function Datagram (options) {
   self._sendBufferNumber = 0;
   self._sendBuffers = {};
   self._receviedBuffers = {};
+  self._pingCallbacks = {};
 
   server.on('message', function (buf, addr) {
     var info = unpackMessage(buf);
@@ -184,6 +205,14 @@ function Datagram (options) {
         self._receivedMessage(info.buffer, addr);
         break;
 
+      case PACK_TYPE_PING:
+        self._receivedPing(info.buffer, addr);
+        break;
+
+      case PACK_TYPE_PONG:
+        self._receivedPong(info.buffer, addr);
+        break;
+
       case PACK_TYPE_DATA_RESEND:
         self._receivedDataReSendRequest(info.buffer, addr);
         break;
@@ -192,15 +221,18 @@ function Datagram (options) {
         self._debug('unknown message type: %s', info.type);
     }
   });
+
   server.on('listening', function () {
     self._listening = true;
     self._debug('listening: host=%s, port=%s', self._options.host, self._options.port);
     self.emit('listening');
   });
+
   server.on('error', function (err) {
     server._debug('on error: err=%s', err);
     self.emit('error', err);
   });
+
   server.on('close', function () {
     self._debug('server closed');
     self.emit('exit');
@@ -223,7 +255,33 @@ function Datagram (options) {
       }
     });
 
+    // self._debug('clean ping callback');
+    common.objectForEach(self._pingCallbacks, function (key, list) {
+      if (list && list.length < 1) {
+        self._debug('clean ping callbacks, key=%s', key);
+        delete self._pingCallbacks[key];
+        return;
+      }
+      for (var i = 0; i < list.length; i++) {
+        var item = list[i];
+        if (item.t < timeout) {
+          list.splice(i, 1);
+          i--;
+          item.fn(new Error('timeout'));
+        }
+      }
+    });
+
   }, options.checkBufferInterval);
+
+  self.on('pong', function (addr, delay, timestamp) {
+    var key = addr.host + ':' + addr.port;
+    var list = self._pingCallbacks[key];
+    if (!Array.isArray(list)) return;
+    list.forEach(function (item) {
+      item.fn(null, delay, timestamp);
+    });
+  });
 
   self._exited = false;
 }
@@ -280,6 +338,20 @@ Datagram.prototype._receivedDataReSendRequest = function (buf, addr) {
   this._server.send(buf, 0, buf.length, addr.port, addr.address);
 };
 
+Datagram.prototype._receivedPing = function (buf, addr) {
+  var timestamp = unpackMessagePing(buf);
+  this._debug('_receivedPing: timestamp=%s', timestamp);
+  var buf = packMessagePong(timestamp);
+  this._server.send(buf, 0, buf.length, addr.port, addr.address);
+};
+
+Datagram.prototype._receivedPong = function (buf, addr) {
+  var timestamp = unpackMessagePong(buf);
+  var delay = Date.now() - timestamp;
+  this._debug('_receivedPong: delay=%s, timestamp=%s', delay, timestamp);
+  this.emit('pong', {host: addr.address, port: addr.port}, delay, timestamp);
+};
+
 Datagram.prototype._checkReceviedBuffer = function (key, requestReSendImmediate) {
   this._debug('_checkReceviedBuffer: key=%s, requestReSendImmediate=%s', key, requestReSendImmediate);
   var one = getArrayFirstExistItem(this._receviedBuffers[key]);
@@ -327,8 +399,26 @@ Datagram.prototype.listen = function (options, callback) {
   }, common.callback(callback));
 };
 
-Datagram.prototype.ping = function (callback) {
+Datagram.prototype.ping = function (host, port, callback) {
+  var self = this;
+  self._debug('ping');
 
+  var key = host + ':' + port;
+  callback = common.callback(callback);
+  var cb = function () {
+    var i = self._pingCallbacks[key] && self._pingCallbacks[key].indexOf(data);
+    if (i !== -1) self._pingCallbacks[key].splice(i, 1);
+    callback.apply(null, arguments);
+  }
+  var data = {t: Date.now(), fn: cb};
+  if (!Array.isArray(self._pingCallbacks[key])) {
+    self._pingCallbacks[key] = [data];
+  } else {
+    self._pingCallbacks[key].push(data);
+  }
+
+  var buf = packMessagePing(Date.now());
+  self._server.send(buf, 0, buf.length, port, host);
 };
 
 Datagram.prototype.send = function (host, port, buf, callback) {
@@ -372,6 +462,10 @@ b.listen({host: '127.0.0.1', port: 7002});
 a.on('listening', function () {
   b.send('127.0.0.1', 7001, 'abcdefg', console.log);
   b.send('127.0.0.1', 7001, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890', console.log);
+  b.ping('127.0.0.1', 7001, console.log);
+  b.ping('127.0.0.1', 7002, console.log);
+  a.ping('127.0.0.1', 7001, console.log);
+  a.ping('127.0.0.1', 7002, console.log);
 });
 a.on('data', function (addr, data) {
   console.log('--------------------');
@@ -384,8 +478,8 @@ a.on('data', function (addr, data) {
   //process.exit();
 });
 setTimeout(function () {
-  console.log(a);
-  console.log(b);
+  //console.log(a);
+  //console.log(b);
   a.exit();
   b.exit();
   //process.exit();
