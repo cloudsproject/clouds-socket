@@ -140,12 +140,12 @@ describe('clouds-socket', function () {
       }
     ], done);
   });
-return;
-  it('send big data', function (done) {
-    var address = support.getUDPListenAddress();
-    var s, c1;
 
+  it('send big data', function (done) {
     var len = 65536 * 10;
+    var address = support.getUDPListenAddress();
+    var s, c1, c2;
+
     var msg1 = support.randomString(len);
     var msgBuf1 = new Buffer(msg1);
     var msg2 = support.randomString(len);
@@ -156,59 +156,66 @@ return;
     async.series([
       function (next) {
         // 创建服务器
-        s = support.createServer(address);
+        s = support.createDatagram(address);
+        s.listen();
         s.on('listening', next);
         s.on('error', function (err) {
           throw err;
         });
-        s.on('connection', function (c) {
-          c.on('data', function (d) {
-            serverData.push(d);
-          });
-          c.send(msgBuf1);
-          c.send(msgBuf1);
-          c.send(msgBuf1);
-          c.send(msgBuf1);
+        s.on('data', function (addr, d) {
+          serverData.push([addr, d]);
+          s.send(addr.host, addr.port, msgBuf1);
+        });
+      },
+      function (next) {
+        // 客户端发送数据
+        c1 = support.createDatagram({maxUDPMessageSize: 1500});
+        c1.send(address.host, address.port, msgBuf2);
+        c1.send(address.host, address.port, msgBuf2);
+        c1.send(address.host, address.port, msgBuf2);
+        c1.send(address.host, address.port, msgBuf2);
+        c1.send(address.host, address.port, msgBuf2, next);
+        c1.on('data', function (addr, d) {
+          clientData.push([addr, d]);
         });
       },
       function (next) {
         // 客户端连接
-        c1 = support.createClient(address);
-        c1.on('connect', function () {
-          c1.send(msgBuf2);
-          c1.send(msgBuf2);
-          c1.send(msgBuf2);
-          c1.send(msgBuf2);
-          c1.send(msgBuf2);
-          c1.send(msgBuf2, next);
-        });
-        c1.on('data', function (d) {
-          clientData.push(d);
+        c2 = support.createDatagram({maxUDPMessageSize: 1500});
+        c2.send(address.host, address.port, msgBuf2);
+        c2.send(address.host, address.port, msgBuf2);
+        c2.send(address.host, address.port, msgBuf2);
+        c2.send(address.host, address.port, msgBuf2);
+        c2.send(address.host, address.port, msgBuf2, next);
+        c2.on('data', function (addr, d) {
+          clientData.push([addr, d]);
         });
       },
-      support.wait(200),
+      support.wait(2000),
       function (next) {
         // 检查数据
-        assert.equal(serverData.length, 6);
-        assert.equal(clientData.length, 4);
-        serverData.forEach(function (d) {
-          assert.equal(d.length, msgBuf2.length);
-          assert.equal(d.toString(), msg2);
+        assert.equal(serverData.length, 10);
+        assert.equal(clientData.length, 10);
+        serverData.forEach(function (item) {
+          assert.equal(item[1].length, msgBuf1.length);
+          assert.equal(item[1].toString(), msg2);
         });
-        clientData.forEach(function (d) {
-          assert.equal(d.length, msgBuf1.length);
-          assert.equal(d.toString(), msg1);
+        clientData.forEach(function (item) {
+          assert.equal(item[1].length, msgBuf2.length);
+          assert.equal(item[1].toString(), msg1);
+          assert.equal(item[0].port, address.port);
+          assert.equal(item[0].host, address.host);
         });
         next();
       },
       function (next) {
         // 关闭服务器所有连接
-        support.exit(c1, s, next);
+        support.exit(c1, c2, s, next);
       }
     ], done);
   });
 
-
+return;
   it('send small data many times', function (done) {
     var address = support.getUDPListenAddress();
     var s, c1;
