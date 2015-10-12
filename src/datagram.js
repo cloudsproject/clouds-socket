@@ -18,7 +18,7 @@ var PACK_TYPE_PONG = 2;
 var PACK_TYPE_DATA_RESEND = 3;
 
 var MAX_MESSAGE_LENGTH = 63 * 1024;
-var MAX_MESSAGE_LENGTH = 10;
+var MAX_MESSAGE_LENGTH = 10; // TODO: debug
 var CHECK_BUFFER_INTERVAL = 500;
 var BUFFER_SENT_TIMEOUT = 5000;
 var BUFFER_RECEVIED_TIMEOUT = 2000;
@@ -68,7 +68,7 @@ function packDatagramBuffer (num, buf) {
     offset += b.length;
     return item;
   });
-  var buffers = list.map(function (b) {
+  list.forEach(function (b) {
     var buf = new Buffer(24 + b.length);
     buf.writeUIntBE(b.timestamp, 0, 6);     // 6B
     buf.writeUInt32BE(b.number, 6);         // 4B
@@ -78,10 +78,10 @@ function packDatagramBuffer (num, buf) {
     buf.writeUInt16BE(b.length, 18);        // 2B
     buf.writeUInt32BE(b.offset, 20);        // 4B
     b.buffer.copy(buf, 24);                 // 4B
-    return buf;
+    b.send = buf;
   });
 
-  return {list: list, buffers: buffers};
+  return list;
 }
 
 function unpackDatagramBufferList (list) {
@@ -125,6 +125,26 @@ function concatDatagramPackages (list) {
 }
 
 
+function getArrayFirstExistItem (list) {
+  for (var i = 0; i < list.length; i++) {
+    if (list[i]) return list[i];
+  }
+}
+
+function packMessageRequestReSendBuffer (number, index) {
+  var b = new Buffer(6);
+  b.writeUInt32BE(number, 0);
+  b.writeUInt16BE(index, 4);
+  return packMessage(b, PACK_TYPE_DATA_RESEND);
+}
+
+function unpackMessageRequestReSendBuffer (buf) {
+  return {
+    number: buf.readUInt32BE(0),
+    index: buf.readUInt16BE(4)
+  };
+}
+
 //------------------------------------------------------------------------------
 
 /**
@@ -159,9 +179,15 @@ function Datagram (options) {
     var info = unpackMessage(buf);
     self._debug('received %d bytes from %s:%d, type=%s', buf.length, addr.address, addr.port, info.type);
     switch (info.type) {
+
       case PACK_TYPE_DATA:
         self._receivedMessage(info.buffer, addr);
         break;
+
+      case PACK_TYPE_DATA_RESEND:
+        self._receivedDataReSendRequest(info.buffer, addr);
+        break;
+
       default:
         self._debug('unknown message type: %s', info.type);
     }
@@ -182,17 +208,17 @@ function Datagram (options) {
 
   self._tidCheckBuffer = setInterval(function () {
 
-    self._debug('check received buffer');
+    // self._debug('check received buffer');
     common.objectForEach(self._receviedBuffers, function (key, list) {
-      self._checkReceviedBuffer(key);
+      self._checkReceviedBuffer(key, true);
     });
 
-    self._debug('check sent buffer');
+    // self._debug('check sent buffer');
     var timeout = Date.now() - self._options.bufferSentTimeout;
     common.objectForEach(self._sendBuffers, function (key, list) {
-      var first = list[0];
+      var first = getArrayFirstExistItem(list);
       if (first.timestamp < timeout) {
-        self._debug('cleam sent buffer: key=%s, timestamp=%s, buf=%s', key, first.timestamp, first.totalLength);
+        self._debug('clean sent buffer: key=%s, timestamp=%s, buf=%s', key, first.timestamp, first.totalLength);
         delete self._sendBuffers[key];
       }
     });
@@ -215,6 +241,11 @@ Datagram.prototype._getAddrFromBufferKey = function (key) {
   return {host: s[0], port: Number(s[1])};
 };
 
+Datagram.prototype._getInfoFromBufferKey = function (key) {
+  var s = key.split(':');
+  return {host: s[0], port: Number(s[1]), number: Number(s[2])};
+};
+
 Datagram.prototype._receivedMessage = function (buf, addr) {
   var info = unpackDatagramBufferItem(buf);
 
@@ -226,33 +257,60 @@ Datagram.prototype._receivedMessage = function (buf, addr) {
   var key = this._getBufferKey(addr.address, addr.port, info.number);
   if (!this._receviedBuffers[key]) this._receviedBuffers[key] = [];
   this._receviedBuffers[key][info.index] = info;
-  this._checkReceviedBuffer(key);
+  this._checkReceviedBuffer(key, false);
 };
 
-Datagram.prototype._checkReceviedBuffer = function (key) {
-  this._debug('_checkReceviedBuffer: key=%s', key);
-  var first = this._receviedBuffers[key] && this._receviedBuffers[key][0];
-  if (!first) return;
+Datagram.prototype._receivedDataReSendRequest = function (buf, addr) {
+  var info = unpackMessageRequestReSendBuffer(buf);
+  var key = this._getBufferKey(addr.address, addr.port, info.number);
+
+  if (!this._sendBuffers[key]) {
+    this._debug('_receivedDataReSendRequest: buffers not exists, key=%s', key);
+    return;
+  }
+
+  var item = this._sendBuffers[key][info.index];
+  if (!item) {
+    this._debug('_receivedDataReSendRequest: buffers not exists, key=%s, index=%s', key, info.index);
+    return;
+  }
+
+  this._debug('_receivedDataReSendRequest: send, key=%s, index=%s', key, info.index);
+  var buf = packMessage(item.send, PACK_TYPE_DATA);
+  this._server.send(buf, 0, buf.length, addr.port, addr.address);
+};
+
+Datagram.prototype._checkReceviedBuffer = function (key, requestReSendImmediate) {
+  this._debug('_checkReceviedBuffer: key=%s, requestReSendImmediate=%s', key, requestReSendImmediate);
+  var one = getArrayFirstExistItem(this._receviedBuffers[key]);
+  if (!one) return;
 
   var count = 0;
   var timeout = Date.now() - this._options.bufferReceviedTimeout;
-  var needReSend = (first.timestamp < timeout);
+  var needReSend = (one.timestamp < timeout);
 
-  for (var i = 0; i < this._receviedBuffers[key].length; i++) {
+  for (var i = 0; i < one.packageSize; i++) {
     if (this._receviedBuffers[key][i]) {
       count++;
     } else {
-      if (needReSend) {
+      if (requestReSendImmediate && needReSend) {
         this._debug('_checkReceviedBuffer: need resend: key=%s, index=%s', key, i);
+        this._requestReSendBuffer(key, i);
       }
     }
   }
 
-  if (count === first.packageSize) {
+  if (count === one.packageSize) {
     var buf = concatDatagramPackages(this._receviedBuffers[key]);
     delete this._receviedBuffers[key];
     this.emit('data', this._getAddrFromBufferKey(key), buf);
   }
+};
+
+Datagram.prototype._requestReSendBuffer = function (key, index) {
+  var info = this._getInfoFromBufferKey(key);
+  var b = packMessageRequestReSendBuffer(info.number, index);
+  this._server.send(b, 0, b.length, info.port, info.host);
 };
 
 Datagram.prototype.listen = function (options, callback) {
@@ -278,21 +336,24 @@ Datagram.prototype.send = function (host, port, buf, callback) {
   self._debug('send: host=%s, port=%s, buf=%s', host, port, buf.length);
 
   var num = self._sendBufferNumber++;
-  var data = packDatagramBuffer(num, buf);
+  var buffers = packDatagramBuffer(num, buf);
   var key = self._getBufferKey(host, port, num);
-  self._sendBuffers[key] = data.list;
+  self._sendBuffers[key] = buffers;
 
-  async.eachSeries(data.buffers, function (b, next) {
-    var buf = packMessage(b, PACK_TYPE_DATA);
+  async.eachSeries(buffers, function (b, next) {
+
+    var buf = packMessage(b.send, PACK_TYPE_DATA);
     self._server.send(buf, 0, buf.length, port, host, next);
+
   }, common.callback(callback));
 };
 
 Datagram.prototype.exit = function (callback) {
   this._debug('exit');
   this._exited = true;
-  this._socket.once('close', common.callback(callback));
-  this._socket.destroy();
+  clearInterval(this._tidCheckBuffer);
+  this._server.once('close', common.callback(callback));
+  this._server.close();
 };
 
 
@@ -304,22 +365,28 @@ module.exports = Datagram;
 
 
 
-var a = new Datagram();
+var a = new Datagram({host: '127.0.0.1', port: 7001});
 var b = new Datagram();
-a.listen({host: '127.0.0.1', port: 7001});
+a.listen();
 b.listen({host: '127.0.0.1', port: 7002});
 a.on('listening', function () {
   b.send('127.0.0.1', 7001, 'abcdefg', console.log);
-  b.send('127.0.0.1', 7001, '66666667777778888888', console.log);
+  b.send('127.0.0.1', 7001, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890', console.log);
 });
 a.on('data', function (addr, data) {
+  console.log('--------------------');
   console.log('data from host=%s, port=%s', addr.host, addr.port);
-  console.log(data, data.toString());
+  console.log(data);
+  console.log(data.toString());
+  console.log('--------------------');
   //console.log(a);
   //console.log(b);
   //process.exit();
 });
 setTimeout(function () {
+  console.log(a);
   console.log(b);
-  process.exit();
+  a.exit();
+  b.exit();
+  //process.exit();
 }, 8000);
