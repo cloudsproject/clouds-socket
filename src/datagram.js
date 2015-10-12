@@ -183,7 +183,7 @@ function unpackMessagePong (buf) {
 function Datagram (options) {
   var self = this;
   Datagram._counter++;
-  self._debug = common.debug('client:#' + Datagram._counter);
+  self._debug = common.debug('datagram:#' + Datagram._counter);
 
   options = options || {};
   options.checkBufferInterval = options.checkBufferInterval || CHECK_BUFFER_INTERVAL;
@@ -346,6 +346,7 @@ Datagram.prototype._receivedPing = function (buf, addr) {
   this._debug('_receivedPing: timestamp=%s', timestamp);
   var buf = packMessagePong(timestamp);
   this._server.send(buf, 0, buf.length, addr.port, addr.address);
+  this.emit('ping', {host: addr.address, port: addr.port}, timestamp);
 };
 
 Datagram.prototype._receivedPong = function (buf, addr) {
