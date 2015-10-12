@@ -94,7 +94,12 @@ client.exit();
 var socket = require('clouds-socket');
 
 // 创建实例
-var datagram = socket.createDatagram();
+var datagram = socket.createDatagram({
+  maxUDPMessageSize: 9216, // UDP消息的最大长度，默认9216
+  checkBufferInterval: 500, // 垃圾回收检查周期，默认500ms
+  bufferSentTimeout: 5000, // 发送数据超时时间，超过此时间后自动丢弃，默认5000ms
+  bufferReceviedTimeout: 2000, // 接收数据超时时间，数据块超过此时间未接收到会请求重新发送，默认2000ms
+});
 
 // 监听端口
 datagram.listen({
