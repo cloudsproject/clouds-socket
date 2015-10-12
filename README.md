@@ -138,7 +138,7 @@ datagram.exit();
 
 ## 测试代码覆盖率
 
-94% coverage 238 SLOC
+89% coverage 563 SLOC
 
 
 ## 授权协议
