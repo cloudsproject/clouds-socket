@@ -17,6 +17,11 @@ function Transfer (socket, debug) {
   socket.on('data', function (buf) {
     self.receiveData(buf, true);
   });
+  self._ended = false;
+  socket.once('end', function () {
+    self._debug('socket closed');
+    self._ended = false;
+  });
   self.startReceiving();
 }
 
@@ -74,6 +79,7 @@ Transfer.prototype.receiveData = function (buf, isNewReceiving) {
 Transfer.prototype.ping = function (callback) {
   if (typeof callback !== 'function') throw new TypeError('the first argument must be a callback function');
   this._debug('transfer: ping');
+  if (this._ended) return callback(new Error('socket has been ended'));
   var buf = Date.now().toString();
   var data = common.packBuffer(buf, common.default.PACK_TYPE_PING);
   this.once('pong', function (delay, timestamp) {
@@ -84,6 +90,7 @@ Transfer.prototype.ping = function (callback) {
 
 Transfer.prototype.pong = function (timestamp) {
   this._debug('transfer: pong');
+  if (this._ended) return callback(new Error('socket has been ended'));
   var buf = timestamp.toString();
   var data = common.packBuffer(buf, common.default.PACK_TYPE_PONG);
   this._socket.write(data);
@@ -91,6 +98,7 @@ Transfer.prototype.pong = function (timestamp) {
 
 Transfer.prototype.send = function (buf, callback) {
   this._debug('transfer: send: buffer=%s, callback=%s', buf.length, !!callback);
+  if (this._ended) return callback(new Error('socket has been ended'));
   var data = common.packBuffer(buf, common.default.PACK_TYPE_DATA);
   if (callback) {
     this._socket.write(data, common.callback(callback));
