@@ -144,6 +144,7 @@ describe('clouds-socket', function () {
   it('send big data', function (done) {
     var len = 65536 * 10;
     var address = support.getUDPListenAddress();
+    address.maxUDPMessageSize = 8192;
     var s, c1, c2;
 
     var msg1 = support.randomString(len);
@@ -181,7 +182,7 @@ describe('clouds-socket', function () {
       },
       function (next) {
         // 客户端连接
-        c2 = support.createDatagram({maxUDPMessageSize: 1500});
+        c2 = support.createDatagram({maxUDPMessageSize: 5000});
         c2.send(address.host, address.port, msgBuf2);
         c2.send(address.host, address.port, msgBuf2);
         c2.send(address.host, address.port, msgBuf2);
