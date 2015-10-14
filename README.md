@@ -95,7 +95,7 @@ var socket = require('clouds-socket');
 
 // 创建实例
 var datagram = socket.createDatagram({
-  maxUDPMessageSize: 9216, // UDP消息的最大长度，默认9216
+  maxUDPMessageSize: 576, // UDP消息的最大长度，默认576
   checkBufferInterval: 500, // 垃圾回收检查周期，默认500ms
   bufferSentTimeout: 5000, // 发送数据超时时间，超过此时间后自动丢弃，默认5000ms
   bufferReceviedTimeout: 2000, // 接收数据超时时间，数据块超过此时间未接收到会请求重新发送，默认2000ms
@@ -135,6 +135,16 @@ datagram.on('exit', function () {
 datagram.exit();
 ```
 
+### 通过环境变量配置默认的值
+
+```bash
+# 设置单条UDP消息的最大长度，默认576
+export CLOUDS_DEFAULT_UDP_MESSAGE_SIZE=8192
+
+# 设置TCP连接被断开后，自动重连的等待时间，ms，默认500
+export CLOUDS_DEFAULT_RECONNECT_WAITING=200
+```
+
 
 ## 测试代码覆盖率
 
@@ -143,4 +153,29 @@ datagram.exit();
 
 ## 授权协议
 
-MIT
+```
+Copyright (c) 2012-2015 Zongmin Lei (雷宗民) <leizongmin@gmail.com>
+http://ucdok.com
+
+The MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+

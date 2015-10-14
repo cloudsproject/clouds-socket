@@ -9,6 +9,7 @@ var dgram = require('dgram');
 var async = require('async');
 var common = require('./common');
 var debug = common.debug('datagram');
+var DEFAULT = common.default;
 
 //------------------------------------------------------------------------------
 var PACK_TYPE_BYTE_SIZE = 1;
@@ -18,7 +19,6 @@ var PACK_TYPE_PONG = 2;
 var PACK_TYPE_DATA_RESEND = 3;
 
 var MESSAGE_HEADER_SIZE = 25;
-var MAX_UDP_MESSAGE_SIZE = 576; // largest safe UDP packet size
 var CHECK_BUFFER_INTERVAL = 500;
 var BUFFER_SENT_TIMEOUT = 5000;
 var BUFFER_RECEVIED_TIMEOUT = 2000;
@@ -189,7 +189,7 @@ function Datagram (options) {
   options.checkBufferInterval = options.checkBufferInterval || CHECK_BUFFER_INTERVAL;
   options.bufferSentTimeout = options.bufferSentTimeout || BUFFER_SENT_TIMEOUT;
   options.bufferReceviedTimeout = options.bufferReceviedTimeout || BUFFER_RECEVIED_TIMEOUT;
-  options.maxUDPMessageSize = options.maxUDPMessageSize || MAX_UDP_MESSAGE_SIZE;
+  options.maxUDPMessageSize = options.maxUDPMessageSize || DEFAULT.MAX_UDP_MESSAGE_SIZE;
   self._options = options;
 
   var server = self._server = dgram.createSocket('udp4');

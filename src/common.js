@@ -15,8 +15,17 @@ exports.debug = function (name) {
 var debug = exports.debug('common');
 
 
+exports.getEnvDefaultValue = function (name, defaultValue) {
+  return process.env['CLOUDS_DEFAULT_' + name] || defaultValue;
+};
+
 var DEFAULT = exports.default = {};
-DEFAULT.RECONNECT_WAITING = 500;
+
+DEFAULT.RECONNECT_WAITING = parseInt(common.getEnvDefaultValue('RECONNECT_WAITING', 500), 10);
+
+// 576 is the largest safe UDP packet size
+DEFAULT.MAX_UDP_MESSAGE_SIZE = parseInt(common.getEnvDefaultValue('UDP_MESSAGE_SIZE', 576), 10);
+
 DEFAULT.BUFFER_LENGTH_BYTE_SIZE = 4;
 DEFAULT.PACK_TYPE_BYTE_SIZE = 1;
 DEFAULT.PACK_TYPE_DATA = 0;
