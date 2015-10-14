@@ -16,7 +16,7 @@ var debug = exports.debug('common');
 
 
 var DEFAULT = exports.default = {};
-DEFAULT.reconnectWaiting = 500;
+DEFAULT.RECONNECT_WAITING = 500;
 DEFAULT.BUFFER_LENGTH_BYTE_SIZE = 4;
 DEFAULT.PACK_TYPE_BYTE_SIZE = 1;
 DEFAULT.PACK_TYPE_DATA = 0;
@@ -25,7 +25,7 @@ DEFAULT.PACK_TYPE_PONG = 2;
 
 
 exports.reconnectWaiting = function () {
-  return parseInt(Math.random() * exports.default.reconnectWaiting, 10);
+  return DEFAULT.RECONNECT_WAITING;
 };
 
 exports.callback = function (fn) {
