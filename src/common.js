@@ -24,7 +24,11 @@ var DEFAULT = exports.default = {};
 DEFAULT.RECONNECT_WAITING = parseInt(common.getEnvDefaultValue('RECONNECT_WAITING', 500), 10);
 
 // 576 is the largest safe UDP packet size
-DEFAULT.MAX_UDP_MESSAGE_SIZE = parseInt(common.getEnvDefaultValue('UDP_MESSAGE_SIZE', 576), 10);
+DEFAULT.MAX_UDP_MESSAGE_SIZE = parseInt(common.getEnvDefaultValue('UDP_MESSAGE_SIZE', 576 - 20 - 8), 10);
+
+DEFAULT.UDP_CLEAN_CACHE_INTERVAL = parseInt(common.getEnvDefaultValue('UDP_CLEAN_CACHE_INTERVAL'), 200);
+DEFAULT.UDP_MAX_RETRY = parseInt(common.getEnvDefaultValue('UDP_MAX_RETRY'), 4000);
+DEFAULT.UDP_RESPONSE_TIMEOUT = parseInt(common.getEnvDefaultValue('UDP_RESPONSE_TIMEOUT'), 12000);
 
 DEFAULT.BUFFER_LENGTH_BYTE_SIZE = 4;
 DEFAULT.PACK_TYPE_BYTE_SIZE = 1;
