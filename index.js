@@ -13,6 +13,7 @@ var Datagram = require('./src/datagram');
 
 exports.version = packageInfo.version;
 exports.default = common.default;
+exports.net = common.net;
 
 exports.Client = Client;
 exports.createClient = Client.create;

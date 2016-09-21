@@ -5,7 +5,6 @@
  */
 
 var assert = require('assert');
-var net = require('net');
 var common = require('./common');
 var Transfer = require('./transfer');
 var debug = common.debug('client');
@@ -50,7 +49,7 @@ Client.prototype._connect = function () {
   self._pendingList = [];
   self._connected = false;
 
-  self._socket = new net.Socket();
+  self._socket = new common.net.Socket();
   self._transfer = Transfer.create(self._socket, self._debug);
   if (self._options.path) {
     self._debug('connecting: path=%s', self._options.path);

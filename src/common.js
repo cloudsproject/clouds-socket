@@ -4,9 +4,16 @@
  * @author Zongmin Lei <leizongmin@gmail.com>
  */
 
+var net = require('net');
 var createDebug = require('debug');
 var common = module.exports = exports = require('lei-utils').extend(exports);
 
+
+// the origin net.Server & net.Socket
+exports.net = {
+  Server: net.Server,
+  Socket: net.Socket,
+};
 
 exports.debug = function (name) {
   return createDebug('clouds:socket:' + name);

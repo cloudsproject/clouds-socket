@@ -5,7 +5,6 @@
  */
 
 var assert = require('assert');
-var net = require('net');
 var common = require('./common');
 var Transfer = require('./transfer');
 var debug = common.debug('server');
@@ -44,7 +43,7 @@ Server.prototype._listen = function () {
   self._listening = false;
   self._exited = false;
 
-  self._socket = new net.Server();
+  self._socket = new common.net.Server();
   self._connections = {};
 
   function addConnection (conn) {
