@@ -1,6 +1,6 @@
 {
   "name": "clouds-socket",
-  "version": "0.2.0-beta-5",
+  "version": "0.2.0-beta-6",
   "description": "lightweight micro-services frameworks",
   "main": "index.js",
   "scripts": {
